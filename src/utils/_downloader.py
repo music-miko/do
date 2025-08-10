@@ -37,11 +37,12 @@ class InvalidHexKeyError(Exception):
 
 
 class Download:
-    def __init__(self, track: Optional[TrackInfo]):
+    def __init__(self, track: Optional[TrackInfo] = None):
         self.track = track
         self.downloads_dir = config.DOWNLOAD_PATH
         self.downloads_dir.mkdir(parents=True, exist_ok=True, mode=0o755)
-        self.output_file = self.downloads_dir / f"{self._sanitize_filename(self.track.name)}.ogg"
+        filename = str(uuid.uuid4()) if track is None else self._sanitize_filename(track.name)
+        self.output_file = self.downloads_dir / f"{filename}.ogg"
 
     async def process(self) -> Union[Tuple[str, Optional[str]], types.Error]:
         """Process the track download with optimized flow."""

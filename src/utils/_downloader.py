@@ -39,7 +39,7 @@ class InvalidHexKeyError(Exception):
 class Download:
     def __init__(self, track: Optional[TrackInfo]):
         self.track = track
-        self.downloads_dir = Path(config.DOWNLOAD_PATH)
+        self.downloads_dir = config.DOWNLOAD_PATH
         self.downloads_dir.mkdir(parents=True, exist_ok=True, mode=0o755)
         self.output_file = self.downloads_dir / f"{self._sanitize_filename(self.track.name)}.ogg"
 
@@ -133,7 +133,7 @@ class Download:
             with file_path.open('rb') as f:
                 return cipher.decrypt(f.read())
         except binascii.Error as e:
-            raise InvalidHexKeyError(f"Invalid hex key: {e}")
+            raise InvalidHexKeyError(f"Invalid hex key: {e}") from e
 
     @staticmethod
     async def rebuild_ogg(filename: Path) -> None:
@@ -187,8 +187,8 @@ class Download:
 
             if proc.returncode != 0:
                 raise Exception(f"ffmpeg failed: {stderr.decode()}")
-        except FileNotFoundError:
-            raise Exception("ffmpeg not found in PATH")
+        except FileNotFoundError as e:
+            raise Exception("ffmpeg not found in PATH") from e
 
     async def _add_vorbis_comments(self, output_file: Path) -> None:
         """Optimized vorbis comment addition."""
@@ -200,10 +200,10 @@ class Download:
             f"ALBUM={self.track.album}",
             f"ARTIST={self.track.artist}",
             f"TITLE={self.track.name}",
-            f"GENRE=Spotify @FallenProjects",
+            "GENRE=Spotify @FallenProjects",
             f"YEAR={self.track.year}",
             f"TRACKNUMBER={self.track.tc}",
-            f"COMMENT=By @FallenProjects",
+            "COMMENT=By @FallenProjects",
             f"PUBLISHER={self.track.artist}",
             f"DURATION={self.track.duration}",
         ]
@@ -338,16 +338,16 @@ class Download:
 
 async def download_playlist_zip(playlist: PlatformTracks) -> Optional[str]:
     """Optimized playlist download with parallel processing."""
-    downloads_dir = Path(config.DOWNLOAD_PATH)
+    downloads_dir = config.DOWNLOAD_PATH
     zip_path = downloads_dir / f"playlist_{int(time.time())}.zip"
     temp_dir = downloads_dir / f"tmp_{uuid.uuid4()}"
     temp_dir.mkdir(parents=True, exist_ok=True)
 
     try:
-        tasks = []
-        for music in playlist.results:
-            tasks.append(_process_playlist_track(music, temp_dir))
-
+        tasks = [
+            _process_playlist_track(music, temp_dir)
+            for music in playlist.results
+        ]
         audio_files = await asyncio.gather(*tasks, return_exceptions=True)
         audio_files = [f for f in audio_files if isinstance(f, Path)]
 

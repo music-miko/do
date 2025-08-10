@@ -86,16 +86,20 @@ def get_main_menu_keyboard(bot_username: str) -> types.ReplyMarkupInlineKeyboard
 
 
 
-@Client.on_message(filters=Filter.command("start"))
+@Client.on_message(filters=Filter.command(["start", "help"]))
 async def welcome(c: Client, message: types.Message):
     bot_username = c.me.usernames.editable_username
+    bot_name = c.me.first_name
     text = (
-        "<b>🎧 Welcome to SpTube Bot</b>\n"
-        "Easily download music & media from your favorite platforms.\n\n"
-        "📩 Send a name, link, or media URL\n"
-        f"🔎 Try inline: <code>@{bot_username} your search</code>\n\n"
-        "🔐 Privacy: /privacy"
+        f"<b>🎧 Welcome to {bot_name}!</b>\n"
+        "Your quick and easy tool to download music & media from top platforms.\n\n"
+        "📩 Just send a song name, link, or media URL.\n"
+        f"🔎 Search inline: <code>@{bot_username} your search</code>\n\n"
+        "🔐 Privacy policy: /privacy\n"
+        "📺 Download videos: /yt <code>url</code>\n"
+        "🎵 Get Spotify playlists: /playlist <code>url</code>\n"
     )
+
     reply = await message.reply_text(
         text,
         parse_mode="html",

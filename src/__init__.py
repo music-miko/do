@@ -4,7 +4,7 @@ from datetime import datetime
 from pytdbot import Client, types
 
 from src import config
-from src.utils import HttpClient
+from src.utils import HttpClient, db
 
 logging.basicConfig(
     level=logging.INFO,
@@ -22,6 +22,7 @@ StartTime = datetime.now()
 
 class Telegram(Client):
     def __init__(self) -> None:
+        self._check_config()
         super().__init__(
             token=config.TOKEN,
             api_id=config.API_ID,
@@ -41,10 +42,30 @@ class Telegram(Client):
         await self._http_client.get_client()
         await super().start()
         self.logger.info(f"Bot started in {datetime.now() - StartTime} seconds.")
+        await db.connect()
 
     async def stop(self) -> None:
         await self._http_client.close_client()
+        await db.close()
         await super().stop()
 
+    @staticmethod
+    def _check_config() -> None:
+        required_keys = [
+            "TOKEN",
+            "API_ID",
+            "API_HASH",
+            "API_KEY",
+            "API_URL",
+            "MONGO_URI",
+            "LOGGER_ID",
+        ]
+
+        if missing := [
+            key for key in required_keys if not getattr(config, key, None)
+        ]:
+            raise RuntimeError(
+                f"Missing required config values in .env: {', '.join(missing)}"
+            )
 
 client: Telegram = Telegram()

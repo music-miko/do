@@ -1,3 +1,4 @@
+import uuid
 from typing import Union, List, Optional
 import asyncio
 
@@ -29,9 +30,13 @@ async def _handle_media_upload(
 
     result = await send_func(**{media_type: input_file})
     if isinstance(result, types.Error) and "WEBPAGE_CURL_FAILED" in result.message:
-        local_file = await Download(None).download_file(media_url, "")
+        file_ext = ".mp4" if media_type in ("video", "animation") else ".jpg"
+        file_name = f"{uuid.uuid4()}{file_ext}"
+        local_file = await Download(None).download_file(media_url, file_name)
         if isinstance(local_file, types.Error):
+            client.logger.warning(f"❌ Media download failed: {local_file.message}")
             return local_file
+
         input_file_local = types.InputFileLocal(local_file)
         result = await send_func(**{media_type: input_file_local})
 

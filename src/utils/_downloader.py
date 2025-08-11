@@ -257,17 +257,16 @@ class Download:
         finally:
             base64_path.unlink(missing_ok=True)
 
-    async def download_file(self, url: str, file_path: str = "") -> str | types.Error:
+    async def download_file(self, url: str, file_name: str = "") -> str | types.Error:
         if not url:
             return types.Error(code=400, message="No URL provided")
 
-        file_path = Path(file_path) if file_path else self._generate_filename(url)
-
+        file_name = Path(file_name) if file_name else Path(self._generate_filename(url))
+        file_path = self.downloads_dir / file_name
         if file_path.exists():
             return str(file_path)
 
         client = await HttpClient.get_client()
-
         try:
             async with client.stream("GET", url, follow_redirects=True) as response:
                 if response.status_code != 200:

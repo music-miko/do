@@ -5,6 +5,7 @@ description = "A high-performance Telegram bot for downloading songs from Spotif
 requires-python = ">=3.13"
 dependencies = [
      "httpx>=0.28.1",
+     "orjson>=3.11.1",
      "pycryptodome>=3.23.0",
      "pydantic>=2.11.7",
      "pymongo>=4.14.0",
@@ -12,7 +13,7 @@ dependencies = [
      "python-dotenv>=1.1.1",
      "tdjson~=1.8.51",
      "ujson~=5.10.0",
-     "yt-dlp>=2025.7.21",
+     "yt-dlp>=2025.8.11",
 ]
 
 [project.license]

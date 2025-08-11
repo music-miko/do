@@ -10,6 +10,7 @@ from src import LOGGER
 from src.config import COOKIES_URL, DOWNLOAD_PATH
 from src.utils import Filter, HttpClient
 
+from ._fsub import fsub
 
 async def get_cookies() -> str | None:
     if not COOKIES_URL:
@@ -65,6 +66,7 @@ async def get_working_proxy():
 
 
 @Client.on_message(filters=Filter.command(["yt", "youtube"]))
+@fsub
 async def youtube_cmd(c: Client, message: types.Message):
     parts = message.text.split(" ", 1)
     if len(parts) < 2:

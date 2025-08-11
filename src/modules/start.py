@@ -6,6 +6,8 @@ from pytdbot import Client, types
 from src import StartTime
 from src.utils import Filter
 
+from ._fsub import fsub
+
 def get_main_menu_keyboard(bot_username: str) -> types.ReplyMarkupInlineKeyboard:
     return types.ReplyMarkupInlineKeyboard([
         [
@@ -87,6 +89,7 @@ def get_main_menu_keyboard(bot_username: str) -> types.ReplyMarkupInlineKeyboard
 
 
 @Client.on_message(filters=Filter.command(["start", "help"]))
+@fsub
 async def welcome(c: Client, message: types.Message):
     bot_username = c.me.usernames.editable_username
     bot_name = c.me.first_name

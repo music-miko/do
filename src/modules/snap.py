@@ -4,7 +4,10 @@ import asyncio
 
 from pytdbot import Client, types
 from src.utils import ApiData, Filter, APIResponse, Download
+
+from ._fsub import fsub
 from ._utils import has_audio_stream
+
 
 
 def batch_chunks(items: List[str], size: int = 10) -> List[List[str]]:
@@ -81,6 +84,7 @@ async def _send_media_album(
 
 
 @Client.on_message(filters=Filter.command("insta"))
+@fsub
 async def insta_cmd(client: Client, message: types.Message) -> None:
     parts = message.text.split(" ", 1)
     if len(parts) < 2 or not parts[1].strip():
@@ -90,6 +94,7 @@ async def insta_cmd(client: Client, message: types.Message) -> None:
 
 
 @Client.on_message(filters=Filter.save_snap())
+@fsub
 async def insta_autodetect(client: Client, message: types.Message):
     return await process_insta_query(client, message, message.text.strip())
 

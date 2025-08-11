@@ -1,8 +1,7 @@
-import re
-
 from pytdbot import Client, types
 
 from src.utils import ApiData, shortener, Filter, download_playlist_zip
+from ._fsub import fsub
 
 
 async def process_spotify_query(message: types.Message, query: str):
@@ -40,6 +39,7 @@ async def process_spotify_query(message: types.Message, query: str):
 
 
 @Client.on_message(filters=Filter.command(["spot", "spotify", "song"]))
+@fsub
 async def spotify_cmd(_: Client, message: types.Message):
     parts = message.text.split(" ", 1)
     if len(parts) < 2:
@@ -51,12 +51,14 @@ async def spotify_cmd(_: Client, message: types.Message):
 
 
 @Client.on_message(filters=Filter.sp_tube())
+@fsub
 async def spotify_autodetect(_: Client, message: types.Message):
     await process_spotify_query(message, message.text)
 
 
 
 @Client.on_message(filters=Filter.command(["dl_zip", "playlist"]))
+@fsub
 async def dl_playlist(c: Client, message: types.Message):
     parts = message.text.strip().split(" ", 1)
 

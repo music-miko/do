@@ -1,27 +1,26 @@
 import asyncio
 import binascii
 import logging
+import mimetypes
 import re
 import shutil
-
 import time
 import uuid
 import zipfile
 from pathlib import Path
-from urllib.parse import urlparse as parse_url
 from typing import Optional, Tuple, Union
+from urllib.parse import urlparse
 
 from Crypto.Cipher import AES
 from pytdbot import types
 
 from src import config
-
 from ._api import ApiData, _executor, HttpClient
 from ._dataclass import TrackInfo, PlatformTracks, MusicTrack
 
 # Constants
 MAX_COVER_SIZE = 10 * 1024 * 1024  # 10MB
-CHUNK_SIZE = 1024 * 1024 * 2  # 2MB
+CHUNK_SIZE = 1024 * 1024  # 1 MB
 DEFAULT_FILE_PERM = 0o644
 
 # Configure logging
@@ -261,12 +260,9 @@ class Download:
         if not url:
             return types.Error(code=400, message="No URL provided")
 
-        file_name = Path(file_name) if file_name else Path(self._generate_filename(url))
-        file_path = self.downloads_dir / file_name
-        if file_path.exists():
-            return str(file_path)
-
         client = await HttpClient.get_client()
+        self.downloads_dir.mkdir(parents=True, exist_ok=True)
+
         try:
             async with client.stream("GET", url, follow_redirects=True) as response:
                 if response.status_code != 200:
@@ -275,26 +271,46 @@ class Download:
                         message=f"Unexpected status code: {response.status_code}"
                     )
 
-                with file_path.open("wb") as f:
+                cd = response.headers.get("content-disposition", "")
+                if "filename=" in cd:
+                    file_name = cd.split("filename=")[-1].strip('"')
+
+                elif not file_name:
+                    parsed_url = urlparse(url)
+                    url_name = Path(parsed_url.path).name
+                    if url_name:
+                        file_name = url_name
+
+                if not file_name or "." not in file_name:
+                    ext = ""
+                    content_type = response.headers.get("content-type")
+                    if content_type:
+                        guessed_ext = mimetypes.guess_extension(content_type.split(";")[0].strip())
+                        if guessed_ext:
+                            ext = guessed_ext
+                    file_name = file_name or f"file-{uuid.uuid4().hex}{ext}"
+
+                file_name = Path(file_name)
+                file_path = self.downloads_dir / file_name
+                temp_path = file_path.with_suffix(file_path.suffix + ".part")
+
+                if file_path.exists():
+                    return str(file_path)
+
+                with temp_path.open("wb") as f:
                     async for chunk in response.aiter_bytes(CHUNK_SIZE):
                         f.write(chunk)
 
+            temp_path.rename(file_path)
             file_path.chmod(DEFAULT_FILE_PERM)
             return str(file_path)
 
         except Exception as e:
-            file_path.unlink(missing_ok=True)
+            try:
+                temp_path.unlink(missing_ok=True)
+            except NameError:
+                pass
             return types.Error(code=500, message=f"Download failed: {str(e)}")
-
-    def _generate_filename(self, url: str) -> Path:
-        """Generate a safe filename from URL."""
-        try:
-            filename = Path(parse_url(url).path).name
-            if not filename or filename == '/':
-                filename = f"{uuid.uuid4()}.tmp"
-            return self.downloads_dir / self._sanitize_filename(filename)
-        except Exception:
-            return self.downloads_dir / f"{uuid.uuid4()}.tmp"
 
     @staticmethod
     def _sanitize_filename(name: str) -> str:

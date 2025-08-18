@@ -4,7 +4,9 @@ from pytdbot import Client, types
 from src.utils import ApiData, Download, shortener, db
 
 
-from ._utils import handle_help_callback
+from ._utils import handle_help_callback, StartMessage
+from .start import get_main_menu_keyboard
+
 
 @Client.on_updateNewCallbackQuery()
 async def callback_query(c: Client, message: types.UpdateNewCallbackQuery):
@@ -18,14 +20,14 @@ async def callback_query(c: Client, message: types.UpdateNewCallbackQuery):
 
     # Back to main menu
     if data == "back_menu":
-        get_msg = await message.getMessage()
-        if isinstance(get_msg, types.Error):
-            c.logger.warning(f"❌ Failed to get message: {get_msg.message}")
-            return
-
-        from .start import welcome
-        await welcome(c, get_msg)
-        await c.deleteMessages(message.chat_id, [message.message_id], revoke=True)
+        await message.answer("🔙 Back to main menu.")
+        bot_username = c.me.usernames.editable_username
+        bot_name = c.me.first_name
+        await message.edit_message_text(
+            text=StartMessage.format(bot_name=bot_name, bot_username=bot_username),
+            disable_web_page_preview=True,
+            reply_markup=get_main_menu_keyboard(bot_username)
+        )
         return
 
     # Only handle spot_ callbacks

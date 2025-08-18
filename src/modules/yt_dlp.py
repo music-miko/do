@@ -12,6 +12,7 @@ from src.utils import Filter, HttpClient
 
 from ._fsub import fsub
 
+
 async def get_cookies() -> str | None:
     if not COOKIES_URL:
         return None
@@ -82,6 +83,7 @@ async def youtube_cmd(c: Client, message: types.Message):
     reply = await message.reply_text("🔍 Preparing download...")
     output_template = str(DOWNLOAD_PATH / "%(title)s.%(ext)s")
     c.logger.info(f"Downloading: {query}")
+
     format_selector = "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best"
     ytdlp_params = [
         "yt-dlp",
@@ -96,7 +98,6 @@ async def youtube_cmd(c: Client, message: types.Message):
         "--socket-timeout", "10",
         "--throttled-rate", "100K",
         "--retry-sleep", "1",
-        # "--no-write-thumbnail",
         "--no-write-info-json",
         "--no-embed-metadata",
         "--no-embed-chapters",

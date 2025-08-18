@@ -22,15 +22,23 @@ BLOCKED_STATUSES = {
 member_status_cache = {}
 invite_link_cache: dict[int, str] = {}
 
-
 def fsub(func: Callable[..., Awaitable]):
     @wraps(func)
     async def wrapper(client: Client, message: types.Message, *args, **kwargs):
+        chat_id = message.chat_id
+
+        # Groups don't require FSUB
+        if chat_id < 0:
+            return await func(client, message, *args, **kwargs)
+
+        # FSUB disabled
         if not FSUB_ID or FSUB_ID == 0:
             return await func(client, message, *args, **kwargs)
 
         user_id = message.from_id
         cached_status = member_status_cache.get(user_id)
+
+        # If user is already verified, skip FSUB check
         if cached_status and cached_status not in BLOCKED_STATUSES:
             return await func(client, message, *args, **kwargs)
 
@@ -39,12 +47,15 @@ def fsub(func: Callable[..., Awaitable]):
             chat_id=FSUB_ID,
             member_id=types.MessageSenderUser(user_id)
         )
-
         if isinstance(member, types.Error) or member.status is None:
+            if member.code == 400 and member.message == "Chat not found":
+                client.logger.warning(f"❌ FSUB group not found: {FSUB_ID}")
+                return await func(client, message, *args, **kwargs)
             status_type = types.ChatMemberStatusLeft().getType()
         else:
             status_type = member.status.getType()
 
+        # Save verified users in cache
         if status_type not in BLOCKED_STATUSES:
             member_status_cache[user_id] = status_type
             return await func(client, message, *args, **kwargs)
@@ -55,15 +66,17 @@ def fsub(func: Callable[..., Awaitable]):
             _chat_id = int(str(FSUB_ID)[4:]) if str(FSUB_ID).startswith("-100") else FSUB_ID
             chat_info = await client.getSupergroupFullInfo(_chat_id)
             if isinstance(chat_info, types.Error):
-                return None
+                client.logger.warning(f"❌ Failed to get supergroup info: {chat_info.message}")
+                return await func(client, message, *args, **kwargs)
 
             invite_link = getattr(chat_info.invite_link, "invite_link", None)
             if invite_link:
                 invite_link_cache[FSUB_ID] = invite_link
+            else:
+                client.logger.warning(f"❌ No invite link found for: {FSUB_ID}")
+                return await func(client, message, *args, **kwargs)
 
-        if not invite_link:
-            return None
-
+        # Send FSUB message
         text = (
             "🔒 <b>Channel Membership Required</b>\n\n"
             "You need to join our channel to use me in private chat.\n"
@@ -71,7 +84,7 @@ def fsub(func: Callable[..., Awaitable]):
             "💬 In groups, you can use me without a subscription."
         )
         button = types.ReplyMarkupInlineKeyboard(
-            [[types.InlineKeyboardButton(text="Join Group",
+            [[types.InlineKeyboardButton(text="📢 Join Channel",
                                          type=types.InlineKeyboardButtonTypeUrl(url=invite_link))]]
         )
 

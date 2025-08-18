@@ -28,6 +28,17 @@ async def has_audio_stream(url: str) -> bool:
         print(f"Error checking audio stream: {e}")
         return False
 
+
+StartMessage = (
+        "<b>🎧 Welcome to {bot_name}!</b>\n"
+        "Your quick and easy tool to download music & media from top platforms.\n\n"
+        "📩 Just send a song name, link, or media URL.\n"
+        "🔎 Search inline: <code>@{bot_username} your search</code>\n\n"
+        "🔐 Privacy policy: /privacy\n"
+        "📺 Download videos: /yt <code>url</code>\n"
+        "🎵 Get Spotify playlists: /playlist <code>url</code>\n"
+    )
+
 async def handle_help_callback(_: Client, message: types.UpdateNewCallbackQuery):
     data = message.payload.data.decode()
     platform = data.replace("help_", "")
@@ -124,7 +135,7 @@ async def handle_help_callback(_: Client, message: types.UpdateNewCallbackQuery)
     }
 
     reply_text = examples.get(platform, "<b>No help available for this platform.</b>")
-    await message.answer(text="Help Menu")
+    await message.answer(text=f"{platform} Help Menu")
     await message.edit_message_text(
         text=reply_text,
         parse_mode="html",

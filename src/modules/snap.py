@@ -104,11 +104,8 @@ async def process_insta_query(client: Client, message: types.Message, query: str
     api = ApiData(query)
     api_data: Union[APIResponse, types.Error, None] = await api.get_snap()
 
-    if isinstance(api_data, types.Error):
-        await reply.edit_text(f"❌ Error: {api_data.message}")
-        return
-    if not api_data:
-        await reply.edit_text("❌ No results found.")
+    if isinstance(api_data, types.Error) or not api_data:
+        await reply.edit_text(f"❌ Error: {api_data.message if api_data else 'No results found'}")
         return
 
     # --- Handle Images ---
@@ -122,6 +119,7 @@ async def process_insta_query(client: Client, message: types.Message, query: str
             if error:
                 await reply.edit_text(f"❌ Failed to send photo(s): {error.message}")
                 return
+            await asyncio.sleep(1)
 
     # --- Handle Videos ---
     if api_data.video:
@@ -165,6 +163,7 @@ async def process_insta_query(client: Client, message: types.Message, query: str
             if error:
                 await reply.edit_text(f"❌ Failed to send video(s): {error.message}")
                 return
+            await asyncio.sleep(1)
 
         if not videos_without_audio:
             await reply.delete()
@@ -180,6 +179,7 @@ async def process_insta_query(client: Client, message: types.Message, query: str
             if error:
                 await reply.edit_text(f"❌ Failed to send animation(s): {error.message}")
                 return
+            await asyncio.sleep(1)
 
     await reply.delete()
     return

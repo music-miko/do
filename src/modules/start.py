@@ -7,6 +7,8 @@ from src import StartTime
 from src.utils import Filter
 
 from ._fsub import fsub
+from ._utils import StartMessage
+
 
 def get_main_menu_keyboard(bot_username: str) -> types.ReplyMarkupInlineKeyboard:
     return types.ReplyMarkupInlineKeyboard([
@@ -93,18 +95,10 @@ def get_main_menu_keyboard(bot_username: str) -> types.ReplyMarkupInlineKeyboard
 async def welcome(c: Client, message: types.Message):
     bot_username = c.me.usernames.editable_username
     bot_name = c.me.first_name
-    text = (
-        f"<b>🎧 Welcome to {bot_name}!</b>\n"
-        "Your quick and easy tool to download music & media from top platforms.\n\n"
-        "📩 Just send a song name, link, or media URL.\n"
-        f"🔎 Search inline: <code>@{bot_username} your search</code>\n\n"
-        "🔐 Privacy policy: /privacy\n"
-        "📺 Download videos: /yt <code>url</code>\n"
-        "🎵 Get Spotify playlists: /playlist <code>url</code>\n"
-    )
+
 
     reply = await message.reply_text(
-        text,
+        StartMessage.format(bot_name=bot_name, bot_username=bot_username),
         parse_mode="html",
         disable_web_page_preview=True,
         reply_markup=get_main_menu_keyboard(bot_username)

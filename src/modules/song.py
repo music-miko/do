@@ -1,4 +1,5 @@
 from pytdbot import Client, types
+from pytdbot.exception import StopHandlers
 
 from src.utils import ApiData, shortener, Filter, download_playlist_zip
 from ._fsub import fsub
@@ -48,13 +49,14 @@ async def spotify_cmd(_: Client, message: types.Message):
 
     query = parts[1]
     await process_spotify_query(message, query)
+    raise StopHandlers
 
 
 @Client.on_message(filters=Filter.sp_tube())
 @fsub
 async def spotify_autodetect(_: Client, message: types.Message):
     await process_spotify_query(message, message.text)
-
+    raise StopHandlers
 
 
 @Client.on_message(filters=Filter.command(["dl_zip", "playlist"]))

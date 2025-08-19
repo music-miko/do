@@ -3,6 +3,8 @@ from typing import Union, List, Optional
 import asyncio
 
 from pytdbot import Client, types
+from pytdbot.exception import StopHandlers
+
 from src.utils import ApiData, Filter, APIResponse, Download
 
 from ._fsub import fsub
@@ -93,15 +95,22 @@ async def insta_cmd(client: Client, message: types.Message) -> None:
 
     api = ApiData(parts[1].strip())
     valid_url = api.extract_save_snap_url()
-    client.logger.info(valid_url, "cmd")
-    return await process_insta_query(client, message, valid_url)
+    if not valid_url:
+        await message.reply_text("Please provide a valid search query.")
+        return None
+
+    await process_insta_query(client, message, valid_url)
+    raise StopHandlers
 
 @Client.on_message(filters=Filter.save_snap())
 @fsub
 async def insta_autodetect(client: Client, message: types.Message):
     api = ApiData(message.text.strip())
     valid_url = api.extract_save_snap_url()
-    return await process_insta_query(client, message, valid_url)
+    if not valid_url:
+        return None
+    await process_insta_query(client, message, valid_url)
+    raise StopHandlers
 
 
 async def process_insta_query(client: Client, message: types.Message, query: str) -> None:

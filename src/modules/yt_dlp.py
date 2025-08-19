@@ -81,8 +81,7 @@ async def youtube_cmd(c: Client, message: types.Message):
 
     is_yt_url = "youtube.com" in query.lower() or "youtu.be" in query.lower()
     reply = await message.reply_text("🔍 Preparing download...")
-    output_template = str(DOWNLOAD_PATH / "%(title)s.%(ext)s")
-    c.logger.info(f"Downloading: {query}")
+    output_template = str(DOWNLOAD_PATH / "%(title).80s.%(ext)s")
 
     format_selector = "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best"
     ytdlp_params = [
@@ -94,6 +93,7 @@ async def youtube_cmd(c: Client, message: types.Message):
         "--retries", "2",
         "--continue",
         "--no-part",
+        "--restrict-filenames",
         "--concurrent-fragments", "3",
         "--socket-timeout", "10",
         "--throttled-rate", "100K",

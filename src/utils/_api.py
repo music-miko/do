@@ -84,36 +84,34 @@ class ApiData:
 
         return any(pattern.search(raw_url) for pattern in URL_PATTERNS.values())
 
-    def is_save_snap_url(self) -> bool:
-        insta_regex = re.compile(r"(?i)https?://(?:www\.)?(instagram\.com|instagr\.am)/(reel|stories|p|tv)/[^\s/?]+")
-        pin_regex = re.compile(r"(?i)https?://(?:[a-z]+\.)?(pinterest\.com|pin\.it)/[^\s]+")
-        fb_watch_regex = re.compile(r"(?i)https?://(?:www\.)?fb\.watch/[^\s/?]+")
-        fb_video_regex = re.compile(r"(?i)https?://(?:www\.)?facebook\.com/.+/videos/\d+")
-        tiktok_regex = re.compile(
-            r"https?://(?:www\.|m\.)?(?:vt\.)?tiktok\.com/(?:@[\w.-]+/video/\d+|v/\d+\.html|t/[\w]+|[\w]+)",
-            re.IGNORECASE
-        )
-        x_regex = re.compile(
-            r"(https?://(?:www\.)?(?:x|twitter)\.com/[^\s]+)",
-            re.IGNORECASE
-        )
-        threads_redex = re.compile(
-            r'^https?://(?:www\.)?threads\.(?:com|net)/@[\w.-]+/post/[\w-]+(?:\?[\w=&%-]+)?$',
-            re.IGNORECASE
-        )
-        reddit_regex = re.compile(
-            r"https?://(?:www\.|old\.)?reddit\.com/r/[\w]+/comments/[\w]+(?:/[^\s]*)?|https?://redd\.it/[\w]+",
-            re.IGNORECASE
-        )
-        twitch_clip_regex = re.compile(
-            r"https?://(?:clips\.twitch\.tv/|(?:www\.)?twitch\.tv/[^/]+/clip/)([\w-]+(?:-\w+)*)",
-            re.IGNORECASE
-        )
+    def extract_save_snap_url(self) -> Optional[str]:
+        if not self.query:
+            return None
 
-        return any(
-            regex.search(self.query)
-            for regex in (insta_regex, pin_regex, fb_watch_regex, fb_video_regex, tiktok_regex, x_regex, threads_redex, reddit_regex, twitch_clip_regex)
-        )
+        regexes = [
+            re.compile(r"(?i)https?://(?:www\.)?(instagram\.com|instagr\.am)/(reel|stories|p|tv)/[^\s/?]+"),
+            re.compile(r"(?i)https?://(?:[a-z]+\.)?(pinterest\.com|pin\.it)/[^\s]+"),
+            re.compile(r"(?i)https?://(?:www\.)?fb\.watch/[^\s/?]+"),
+            re.compile(r"(?i)https?://(?:www\.)?facebook\.com/.+/videos/\d+"),
+            re.compile(r"https?://(?:www\.|m\.)?(?:vt\.)?tiktok\.com/(?:@[\w.-]+/video/\d+|v/\d+\.html|t/[\w]+|[\w]+)",
+                       re.IGNORECASE),
+            re.compile(r"https?://(?:www\.)?(?:x|twitter)\.com/[^\s]+", re.IGNORECASE),
+            re.compile(r"https?://(?:www\.)?threads\.(?:com|net)/@[\w.-]+/post/[\w-]+(?:\?[\w=&%-]+)?", re.IGNORECASE),
+            re.compile(
+                r"https?://(?:www\.|old\.)?reddit\.com/r/[\w]+/comments/[\w]+(?:/[^\s]*)?|https?://redd\.it/[\w]+",
+                re.IGNORECASE),
+            re.compile(r"https?://(?:clips\.twitch\.tv/|(?:www\.)?twitch\.tv/[^/]+/clip/)([\w-]+(?:-\w+)*)",
+                       re.IGNORECASE),
+        ]
+
+        for regex in regexes:
+            if match := regex.search(self.query.strip()):
+                return match.group(0)
+
+        return None
+
+    def is_save_snap_url(self) -> bool:
+        return bool(self.extract_save_snap_url())
 
     async def get_info(self) -> Union[types.Error, PlatformTracks]:
         if not self.is_valid():
@@ -152,10 +150,7 @@ class ApiData:
         client = await HttpClient.get_client()
 
         try:
-            response = await client.get(
-                endpoint,
-                headers=headers
-            )
+            response = await client.get(endpoint,headers=headers)
             response.raise_for_status()
             raw_data = response.json()
             results = [MusicTrack(**track) for track in raw_data.get("results", [])]
@@ -169,20 +164,21 @@ class ApiData:
         except Exception as e:
             return types.Error(message=f"Unexpected error: {e}")
 
-    async def get_track(self) -> Union[types.Error, TrackInfo]:
+    async def get_track(self, video: bool = False, quality: Optional[str] = None) -> Union[types.Error, TrackInfo]:
         track_id = self.query
         if not track_id:
             return types.Error(message="Empty track ID")
 
+        # video and quality parameters are only valid when you pass yt link or id
         endpoint = f"{self.api_url}/get_track?id={urllib.parse.quote(track_id)}"
+        if quality and video:
+            endpoint += f"&quality={urllib.parse.quote(quality)}&video=true"
+
         headers = self._get_headers()
         client = await HttpClient.get_client()
 
         try:
-            response = await client.get(
-                endpoint,
-                headers=headers
-            )
+            response = await client.get(endpoint, headers=headers)
             response.raise_for_status()
             raw_data = response.json()
             return TrackInfo(**raw_data)

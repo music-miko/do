@@ -14,6 +14,7 @@ logging.basicConfig(
 )
 
 logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("pymongo").setLevel(logging.WARNING)
 
 LOGGER = logging.getLogger("Bot")
 

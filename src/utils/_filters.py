@@ -91,6 +91,7 @@ class Filter:
             text = Filter._extract_text(event)
             if not text or command_pattern.match(text.strip()):
                 return False
+
             return ApiData(text).is_save_snap_url()
 
         return filters.create(filter_func)

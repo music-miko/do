@@ -262,7 +262,8 @@ class Download:
 
         client = await HttpClient.get_client()
         self.downloads_dir.mkdir(parents=True, exist_ok=True)
-
+        if not file_name:
+            file_name = f"{self._sanitize_filename(self.track.name)}.mp4"
         try:
             async with client.stream("GET", url, follow_redirects=True) as response:
                 if response.status_code != 200:

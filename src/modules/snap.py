@@ -90,13 +90,18 @@ async def insta_cmd(client: Client, message: types.Message) -> None:
     if len(parts) < 2 or not parts[1].strip():
         await message.reply_text("Please provide a valid search query.")
         return None
-    return await process_insta_query(client, message, parts[1].strip())
 
+    api = ApiData(parts[1].strip())
+    valid_url = api.extract_save_snap_url()
+    client.logger.info(valid_url, "cmd")
+    return await process_insta_query(client, message, valid_url)
 
 @Client.on_message(filters=Filter.save_snap())
 @fsub
 async def insta_autodetect(client: Client, message: types.Message):
-    return await process_insta_query(client, message, message.text.strip())
+    api = ApiData(message.text.strip())
+    valid_url = api.extract_save_snap_url()
+    return await process_insta_query(client, message, valid_url)
 
 
 async def process_insta_query(client: Client, message: types.Message, query: str) -> None:
@@ -116,6 +121,7 @@ async def process_insta_query(client: Client, message: types.Message, query: str
                 if len(batch) == 1
                 else _send_media_album(client, message, batch, "photo")
             )
+
             if error:
                 await reply.edit_text(f"❌ Failed to send photo(s): {error.message}")
                 return

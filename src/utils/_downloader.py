@@ -91,6 +91,7 @@ class Download:
                 await self.rebuild_ogg(decrypted_file)
                 result = await self.vorb_repair_ogg(decrypted_file)
                 self.output_file.chmod(DEFAULT_FILE_PERM)
+                logger.info(f"Successfully processed {self.track.tc}: {result}")
                 return result
             finally:
                 encrypted_file.unlink(missing_ok=True)
@@ -156,7 +157,7 @@ class Download:
         cover_path = await self.save_cover(self.track.cover)
         try:
             await self._run_ffmpeg(input_file, self.output_file)
-            await self._add_vorbis_comments(self.output_file)
+            await self.add_vorbis_comments(self.output_file)
         except Exception as e:
             self.output_file.unlink(missing_ok=True)
             raise e
@@ -185,7 +186,7 @@ class Download:
         except FileNotFoundError as e:
             raise Exception("ffmpeg not found in PATH") from e
 
-    async def _add_vorbis_comments(self, output_file: Path) -> None:
+    async def add_vorbis_comments(self, output_file: Path) -> None:
         """Optimized vorbis comment addition."""
         if not shutil.which('vorbiscomment'):
             logger.warning("vorbiscomment not found - skipping metadata")
@@ -195,10 +196,10 @@ class Download:
             f"ALBUM={self.track.album}",
             f"ARTIST={self.track.artist}",
             f"TITLE={self.track.name}",
-            "GENRE=Spotify @FallenProjects",
+            "GENRE=Spotify",
             f"YEAR={self.track.year}",
             f"TRACKNUMBER={self.track.tc}",
-            "COMMENT=By @FallenProjects",
+            "COMMENT=Via NoiNoi_bot | FallenProjects",
             f"PUBLISHER={self.track.artist}",
             f"DURATION={self.track.duration}",
         ]
@@ -323,6 +324,7 @@ class Download:
 
     async def save_cover(self, cover_url: Optional[str]) -> Optional[str]:
         if not cover_url:
+            logger.warning("No cover URL provided")
             return None
 
         cover_path = self.downloads_dir / f"{self.track.tc}_cover.jpg"

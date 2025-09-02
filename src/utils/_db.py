@@ -1,9 +1,47 @@
+import asyncio
 import os
 from typing import Optional
+
 from pymongo import AsyncMongoClient
 from pytdbot import types
+
 from src.config import MONGO_URI, LOGGER_ID
 from ._dataclass import TrackInfo
+
+
+async def convert_to_m4a(input_file: str, cover_file: str, track: TrackInfo) -> Optional[str]:
+    """Convert to M4A and embed cover + metadata."""
+    abs_input = os.path.abspath(input_file)
+    abs_cover = os.path.abspath(cover_file)
+    output_file = os.path.splitext(abs_input)[0] + ".m4a"
+
+    cmd = [
+        "ffmpeg", "-y", "-i", abs_input, "-i", abs_cover,
+        "-map", "0:a", "-map", "1:v",
+        "-c:a", "aac", "-b:a", "192k", "-c:v", "copy", "-disposition:v", "attached_pic",
+        '-metadata', f'lyrics={track.lyrics}',
+        "-metadata", f"title={track.name}",
+        "-metadata", f"artist={track.artist}",
+        "-metadata", f"album={track.album}",
+        "-metadata", f"year={track.year}",
+        "-metadata", "genre=Spotify",
+        "-metadata", "comment=Via NoiNoi_bot | FallenProjects",
+        output_file
+    ]
+
+    proc = await asyncio.create_subprocess_exec(
+        *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+    )
+
+    _, stderr = await proc.communicate()
+
+    if proc.returncode != 0:
+        print(f"❌ ffmpeg failed: {stderr.decode(errors='ignore')}")
+        return None
+
+    return output_file
+
+
 
 class MongoDB:
     def __init__(self):
@@ -70,38 +108,75 @@ class MongoDB:
             return content.video.video.remote.id
 
         client.logger.warning(f"❌ Unsupported media type in stored link: {content}")
+        await self.remove_song(track_id)
         return None
 
     async def upload_song_and_get_file_id(
-        self, file_path: str, cover: Optional[str], track: TrackInfo
-    ) -> Optional[str]:
+            self, file_path: str, cover: Optional[str], track: TrackInfo
+    ) -> Optional[str] | types.Error:
         """Upload song to logger chat, store link, and return file ID."""
         from src import client
 
-        upload = await client.sendAudio(
-            chat_id=self.logger_chat_id,
-            audio=types.InputFileLocal(file_path),
-            album_cover_thumbnail=types.InputThumbnail(types.InputFileLocal(cover)) if cover else None,
-            title=track.name,
-            performer=track.artist,
-            duration=track.duration,
-            caption=f"<b>{track.name}</b>\n<i>{track.artist}</i>",
-        )
+        thumb = types.InputThumbnail(thumbnail=types.InputFileLocal(cover) if cover else types.InputFileRemote(track.cover), width=640, height=640)
+        async def _send(path: str):
+            return await client.sendAudio(
+                chat_id=self.logger_chat_id,
+                audio=types.InputFileLocal(path),
+                album_cover_thumbnail=thumb,
+                title=track.name,
+                performer=track.artist,
+                duration=track.duration,
+                caption=f"<b>{track.name}</b>\n<i>{track.artist}</i>",
+            )
+
+        upload = await _send(file_path)
+
+        # Handle "uploaded as voice" issue
+        if isinstance(upload.content, types.MessageVoiceNote):
+            fixed_path = await convert_to_m4a(file_path, cover, track)
+            if not fixed_path:
+                public_link = await client.getMessageLink(upload.chat_id, upload.id)
+                return types.Error(
+                    message=f"Failed to upload audio - here is your song: {public_link.link or 'No Link 2x sed moment'}"
+                )
+
+            await upload.delete()
+            upload = await _send(fixed_path)
+
+            try:
+                os.remove(fixed_path)
+            except Exception as e:
+                client.logger.warning(f"❌ Failed to remove converted file: {e}")
+
         if isinstance(upload, types.Error):
             client.logger.warning(f"❌ Failed to upload audio: {upload.message}")
-            return None
+            return upload
 
         public_link = await client.getMessageLink(upload.chat_id, upload.id)
         if isinstance(public_link, types.Error):
             client.logger.warning(f"❌ Failed to get public link: {public_link.message}")
-            return None
+            return public_link
 
-        await self.store_song_link(track.tc, public_link.link)
         try:
             os.remove(file_path)
         except Exception as e:
-            client.logger.warning(f"❌ Failed to remove file: {e}")
-        return upload.content.audio.audio.remote.id
+            client.logger.warning(f"❌ Failed to remove original file: {e}")
+
+        if isinstance(upload.content, types.MessageAudio):
+            await self.store_song_link(track.tc, public_link.link)
+            return upload.content.audio.audio.remote.id
+
+        client.logger.info(f"file_path: {file_path} | cover: {cover}")
+        client.logger.warning(f"❌ Unsupported media type in uploaded audio: {upload}")
+        return types.Error(
+            message=f"Failed to upload audio - here is your song: {public_link.link}"
+        )
+
+    async def remove_song(self, track_id: str) -> None:
+        """Remove song from MongoDB and cache."""
+        await self.songs.delete_one({"_id": track_id})
+        if track_id in self._cache:
+            del self._cache[track_id]
 
     async def close(self) -> None:
         """Close MongoDB connection and clear cache."""

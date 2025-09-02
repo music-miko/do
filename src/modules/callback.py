@@ -104,6 +104,10 @@ async def callback_query(c: Client, message: types.UpdateNewCallbackQuery):
 
         if track.platform.lower() == "spotify":
             file_id = await db.upload_song_and_get_file_id(audio_file, cover, track)
+            if isinstance(file_id, types.Error):
+                await msg.edit_text(file_id.message)
+                return
+
             if not file_id:
                 await msg.edit_text("❌ Failed to send song to database.")
                 return

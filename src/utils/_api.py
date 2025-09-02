@@ -33,16 +33,32 @@ URL_PATTERNS = {
 }
 
 SAVE_SNAP_PATTERNS = [
-    re.compile(r"(?i)https?://(?:www\.)?(instagram\.com|instagr\.am)/(reel|stories|p|tv|share)/[^\s/?]+",re.I),
+    re.compile(
+        r"(?i)https?://(?:www\.)?(instagram\.com|instagr\.am)/(reel|reels|stories|p|tv|share)/[^\s/?]+",
+        re.I,
+    ),
     re.compile(r"(?i)https?://(?:[a-z]+\.)?(pinterest\.com|pin\.it)/[^\s]+"),
     re.compile(r"(?i)https?://(?:www\.)?fb\.watch/[^\s/?]+"),
     re.compile(r"(?i)https?://(?:www\.)?facebook\.com/.+/videos/\d+"),
-    re.compile(r"https?://(?:www\.|m\.)?(?:vt\.)?tiktok\.com/(?:@[\w.-]+/video/\d+|v/\d+\.html|t/[\w]+|[\w]+)", re.I),
+    re.compile(
+        r"https?://(?:www\.|m\.)?(?:vt\.)?tiktok\.com/(?:@[\w.-]+/video/\d+|v/\d+\.html|t/[\w]+|[\w]+)",
+        re.I,
+    ),
     re.compile(r"https?://(?:www\.)?(?:x|twitter)\.com/[^\s]+", re.I),
-    re.compile(r"https?://(?:www\.)?threads\.(?:com|net)/@[\w.-]+/post/[\w-]+(?:\?[\w=&%-]+)?", re.I),
-    re.compile(r"https?://(?:www\.|old\.)?reddit\.com/r/[\w]+/comments/[\w]+(?:/[^\s]*)?|https?://redd\.it/[\w]+", re.I),
-    re.compile(r"https?://(?:clips\.twitch\.tv/|(?:www\.)?twitch\.tv/[^/]+/clip/)([\w-]+(?:-\w+)*)", re.I),
+    re.compile(
+        r"https?://(?:www\.)?threads\.(?:com|net)/@[\w.-]+/post/[\w-]+(?:\?[\w=&%-]+)?",
+        re.I,
+    ),
+    re.compile(
+        r"https?://(?:www\.|old\.)?reddit\.com/r/[\w]+/comments/[\w]+(?:/[^\s]*)?|https?://redd\.it/[\w]+",
+        re.I,
+    ),
+    re.compile(
+        r"https?://(?:clips\.twitch\.tv/|(?:www\.)?twitch\.tv/[^/]+/clip/)([\w-]+(?:-\w+)*)",
+        re.I,
+    ),
 ]
+
 
 _client: Optional[httpx.AsyncClient] = None
 class HttpClient:

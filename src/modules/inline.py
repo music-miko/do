@@ -4,7 +4,8 @@ from typing import Union
 
 from pytdbot import Client, types
 
-from src.utils import ApiData, Download, shortener, APIResponse, db
+from src.utils import ApiData, shortener, APIResponse
+from ._media_utils import process_track_media, get_reply_markup
 
 
 @Client.on_updateNewInlineQuery()
@@ -47,16 +48,7 @@ async def inline_search(c: Client, message: types.UpdateNewInlineQuery):
             c.logger.warning(f"❌ Error parsing inline result for {track.name}: {parse.message}")
             continue
 
-        reply_markup = types.ReplyMarkupInlineKeyboard(
-            [
-                [
-                    types.InlineKeyboardButton(
-                        text=f"{track.name}",
-                        type=types.InlineKeyboardButtonTypeSwitchInline(query=track.artist, target_chat=types.TargetChatCurrent())
-                    ),
-                ],
-            ]
-        )
+        reply_markup = get_reply_markup(track.name, track.artist)
 
         results.append(
             types.InputInlineQueryResultArticle(
@@ -102,131 +94,44 @@ async def inline_result(c: Client, message: types.UpdateNewChosenInlineResult):
         )
         return
 
-    reply_markup = types.ReplyMarkupInlineKeyboard(
-        [
-            [
-                types.InlineKeyboardButton(
-                    text="Update ",
-                    type=types.InlineKeyboardButtonTypeUrl(
-                        "https://t.me/FallenProjects"
-                    ),
-                ),
-                types.InlineKeyboardButton(
-                    text=f"{track.name}",
-                    type=types.InlineKeyboardButtonTypeSwitchInline(query=track.artist,
-                                                                    target_chat=types.TargetChatCurrent())
-                ),
-            ],
-        ]
+    # Process the track media
+    audio, cover, status_text = await process_track_media(
+        c, track, inline_message_id=inline_message_id
     )
-
-    status_text = f"<b>🎵 {track.name}</b>\n👤 {track.artist} | 📀 {track.album}\n⏱️ {track.duration}s"
-    parsed_status = await c.parseTextEntities(status_text, types.TextParseModeHTML())
-    msg = await c.editInlineMessageText(
-        inline_message_id=inline_message_id,
-        input_message_content=types.InputMessageText(parsed_status)
-    )
-
-    if isinstance(msg, types.Error):
-        c.logger.warning(f"❌ Failed to edit message: {msg.message}")
+    
+    if not audio:
+        parsed_status = await c.parseTextEntities(status_text, types.TextParseModeHTML())
+        await c.editInlineMessageText(
+            inline_message_id=inline_message_id,
+            input_message_content=types.InputMessageText(parsed_status)
+        )
         return
 
-    audio_file, cover= None, None
-    audio: Union[types.InputFile, None] = None
+    # Get reply markup
+    reply_markup = get_reply_markup(track.name, track.artist)
+    parsed_status = await c.parseTextEntities(status_text, types.TextParseModeHTML())
 
-    # Spotify shortcut if file already cached
-    if track.platform.lower() == "spotify" and track.tc:
-        if file_id := await db.get_song_file_id(track.tc):
-            audio = types.InputFileRemote(file_id)
-
-    # Download if not found in DB
-    if not audio:
-        dl = Download(track)
-        result = await dl.process()
-        if isinstance(result, types.Error):
-            parsed_status = await c.parseTextEntities(f"❌ Download failed.\n<b>{result.message}</b>", types.TextParseModeHTML())
-            await c.editInlineMessageText(
-                inline_message_id=inline_message_id,
-                input_message_content=types.InputMessageText(parsed_status)
-            )
-            return
-
-        audio_file, cover = result
-        if not audio_file:
-            parsed_status = await c.parseTextEntities("❌ Failed to download song.\nPlease report this to @FallenProjects.", types.TextParseModeHTML())
-            await c.editInlineMessageText(
-                inline_message_id=inline_message_id,
-                input_message_content=types.InputMessageText(parsed_status)
-            )
-            return
-
-        if track.platform.lower() == "spotify":
-            file_id = await db.upload_song_and_get_file_id(audio_file, cover, track)
-            if isinstance(file_id, types.Error):
-                parsed_status = await c.parseTextEntities(file_id.message or "❌ Failed to send song to database.", types.TextParseModeHTML())
-                await c.editInlineMessageText(
-                    inline_message_id=inline_message_id,
-                    input_message_content=types.InputMessageText(parsed_status)
-                )
-                return
-
-            audio = types.InputFileRemote(file_id)
-
-        elif re.match(r"https?://t\.me/([^/]+)/(\d+)", audio_file):
-            info = await c.getMessageLinkInfo(audio_file)
-            if isinstance(info, types.Error) or not info.message:
-                c.logger.error(f"❌ Failed to resolve link: {audio_file}")
-                return
-
-            public_msg = await c.getMessage(info.chat_id, info.message.id)
-            if isinstance(public_msg, types.Error):
-                c.logger.error(f"❌ Failed to fetch message: {public_msg.message}")
-                parsed_status = await c.parseTextEntities(f"❌ Failed to fetch message: {public_msg.message}", types.TextParseModeHTML())
-                await c.editInlineMessageText(
-                    inline_message_id=inline_message_id,
-                    input_message_content=types.InputMessageText(parsed_status)
-                )
-                return
-
-            if isinstance(public_msg.content, types.MessageAudio):
-                audio = types.InputFileRemote(public_msg.content.audio.audio.remote.id)
-            elif isinstance(public_msg.content, types.MessageDocument):
-                audio = types.InputFileRemote(public_msg.content.document.document.remote.id)
-            elif isinstance(public_msg.content, types.MessageVideo):
-                audio = types.InputFileRemote(public_msg.content.video.video.remote.id)
-            else:
-                c.logger.error(f"❌ No audio file in t.me link: {audio_file}")
-                parsed_status = await c.parseTextEntities(f"❌ No audio file in t.me link: {audio_file}", types.TextParseModeHTML())
-                await c.editInlineMessageText(
-                    inline_message_id=inline_message_id,
-                    input_message_content=types.InputMessageText(parsed_status)
-                )
-                return
-        else:
-            audio = types.InputFileLocal(audio_file)
-
-    # Send final audio
-    edit_audio = await c.editInlineMessageMedia(
+    # Send the audio
+    reply = await c.editInlineMessageMedia(
         inline_message_id=inline_message_id,
-        reply_markup=reply_markup,
         input_message_content=types.InputMessageAudio(
             audio=audio,
             album_cover_thumbnail=types.InputThumbnail(types.InputFileLocal(cover)) if cover else None,
             title=track.name,
             performer=track.artist,
             duration=track.duration,
-            caption=parsed_status
+            caption=parsed_status,
         ),
+        reply_markup=reply_markup,
     )
 
-    if isinstance(edit_audio, types.Error):
-        c.logger.error(f"❌ Failed to send audio: {edit_audio.message}")
-        fallback_text = await c.parseTextEntities(edit_audio.message, types.TextParseModeHTML())
+    if isinstance(reply, types.Error):
+        c.logger.error(f"❌ Failed to send audio file: {reply.message}")
+        parsed_status = await c.parseTextEntities("❌ Failed to send the song. Please try again later."+reply.message, types.TextParseModeHTML())
         await c.editInlineMessageText(
             inline_message_id=inline_message_id,
-            input_message_content=types.InputMessageText(fallback_text)
+            input_message_content=types.InputMessageText(parsed_status)
         )
-    return
 
 
 async def process_snap_inline(c: Client, message: types.UpdateNewInlineQuery, query: str):

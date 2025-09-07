@@ -1,11 +1,7 @@
-import re
-from typing import Union
-
 from pytdbot import Client, types
 
-from src.utils import ApiData, Download, shortener, db
-
-
+from src.utils import ApiData, shortener
+from ._media_utils import process_track_media, get_reply_markup
 from ._utils import handle_help_callback, StartMessage
 from .start import get_main_menu_keyboard
 
@@ -65,84 +61,20 @@ async def callback_query(c: Client, message: types.UpdateNewCallbackQuery):
         c.logger.warning(f"❌ Failed to edit message: {msg.message}")
         return
 
-    reply_markup = types.ReplyMarkupInlineKeyboard(
-        [
-            [
-                types.InlineKeyboardButton(
-                    text="Update ",
-                    type=types.InlineKeyboardButtonTypeUrl(
-                        "https://t.me/FallenProjects"
-                    ),
-                ),
-                types.InlineKeyboardButton(
-                    text=f"{track.name}",
-                    type=types.InlineKeyboardButtonTypeSwitchInline(query=track.artist,
-                                                                    target_chat=types.TargetChatCurrent())
-                ),
-            ],
-        ]
+    # Process the track media
+    audio, cover, status_text = await process_track_media(
+        c, track, chat_id=message.chat_id, message_id=message.message_id
     )
+    
+    if not audio:
+        await message.edit_message_text(status_text)
+        return
 
-    status_text = f"<b>🎵 {track.name}</b>\n👤 {track.artist} | 📀 {track.album}\n⏱️ {track.duration}s"
+    # Get reply markup
+    reply_markup = get_reply_markup(track.name, track.artist)
     parse = await c.parseTextEntities(status_text, types.TextParseModeHTML())
 
-    audio_file, cover = None, None
-    audio: Union[types.InputFile, None] = None
-
-    # Spotify shortcut if file already cached
-    if track.platform.lower() == "spotify" and track.tc:
-        if file_id := await db.get_song_file_id(track.tc):
-            audio = types.InputFileRemote(file_id)
-
-    # Download if not found in DB
-    if not audio:
-        dl = Download(track)
-        result = await dl.process()
-        if isinstance(result, types.Error):
-            await msg.edit_text(f"❌ Download failed.\n<b>{result.message}</b>")
-            return
-
-        audio_file, cover = result
-        if not audio_file:
-            await msg.edit_text("❌ Failed to download song.\nPlease report this to @FallenProjects.")
-            return
-
-        if track.platform.lower() == "spotify":
-            file_id = await db.upload_song_and_get_file_id(audio_file, cover, track)
-            if isinstance(file_id, types.Error):
-                await msg.edit_text(file_id.message)
-                return
-
-            if not file_id:
-                await msg.edit_text("❌ Failed to send song to database.")
-                return
-
-            audio = types.InputFileRemote(file_id)
-        elif re.match(r"https?://t\.me/([^/]+)/(\d+)", audio_file):
-            info = await c.getMessageLinkInfo(audio_file)
-            if isinstance(info, types.Error) or not info.message:
-                c.logger.error(f"❌ Failed to resolve link: {audio_file}")
-                return
-
-            public_msg = await c.getMessage(info.chat_id, info.message.id)
-            if isinstance(public_msg, types.Error):
-                c.logger.error(f"❌ Failed to fetch message: {public_msg.message}")
-                await msg.edit_text(f"❌ Failed to fetch message: {public_msg.message}")
-                return
-
-            if isinstance(public_msg.content, types.MessageAudio):
-                audio = types.InputFileRemote(public_msg.content.audio.audio.remote.id)
-            elif isinstance(public_msg.content, types.MessageDocument):
-                audio = types.InputFileRemote(public_msg.content.document.document.remote.id)
-            elif isinstance(public_msg.content, types.MessageVideo):
-                audio = types.InputFileRemote(public_msg.content.video.video.remote.id)
-            else:
-                c.logger.error(f"❌ No audio file in t.me link: {audio_file}")
-                await msg.edit_text("⚠️ Audio file not found in t.me link")
-                return
-        else:
-            audio = types.InputFileLocal(audio_file)
-
+    # Send the audio
     reply = await c.editMessageMedia(
         chat_id=message.chat_id,
         message_id=message.message_id,

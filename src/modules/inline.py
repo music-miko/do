@@ -106,11 +106,7 @@ async def inline_result(c: Client, message: types.UpdateNewChosenInlineResult):
         [
             [
                 types.InlineKeyboardButton(
-                    text=(
-                        f'{track.name[:20]}...'
-                        if len(track.name) > 20
-                        else track.name
-                    ),
+                    text="Update ",
                     type=types.InlineKeyboardButtonTypeUrl(
                         "https://t.me/FallenProjects"
                     ),
@@ -135,7 +131,8 @@ async def inline_result(c: Client, message: types.UpdateNewChosenInlineResult):
         c.logger.warning(f"❌ Failed to edit message: {msg.message}")
         return
 
-    audio_file, cover, audio = None, None, None
+    audio_file, cover= None, None
+    audio: Union[types.InputFile, None] = None
 
     # Spotify shortcut if file already cached
     if track.platform.lower() == "spotify" and track.tc:

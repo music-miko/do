@@ -1,4 +1,6 @@
 import re
+from typing import Union
+
 from pytdbot import Client, types
 
 from src.utils import ApiData, Download, shortener, db
@@ -67,22 +69,25 @@ async def callback_query(c: Client, message: types.UpdateNewCallbackQuery):
         [
             [
                 types.InlineKeyboardButton(
-                    text=(
-                        f'{track.name[:20]}...'
-                        if len(track.name) > 20
-                        else track.name
-                    ),
+                    text="Update ",
                     type=types.InlineKeyboardButtonTypeUrl(
                         "https://t.me/FallenProjects"
                     ),
-                )
-            ]
+                ),
+                types.InlineKeyboardButton(
+                    text=f"{track.name}",
+                    type=types.InlineKeyboardButtonTypeSwitchInline(query=track.artist,
+                                                                    target_chat=types.TargetChatCurrent())
+                ),
+            ],
         ]
     )
+
     status_text = f"<b>🎵 {track.name}</b>\n👤 {track.artist} | 📀 {track.album}\n⏱️ {track.duration}s"
     parse = await c.parseTextEntities(status_text, types.TextParseModeHTML())
 
-    audio_file, cover, audio = None, None, None
+    audio_file, cover = None, None
+    audio: Union[types.InputFile, None] = None
 
     # Spotify shortcut if file already cached
     if track.platform.lower() == "spotify" and track.tc:

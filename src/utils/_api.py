@@ -131,7 +131,7 @@ class ApiData:
 
     async def search(self, limit: str = DEFAULT_LIMIT) -> Union[types.Error, PlatformTracks]:
         return await self._request_json(
-            f"{self.api_url}/search?query={urllib.parse.quote(self.query)}?limit={urllib.parse.quote(limit)}",
+            f"{self.api_url}/search?query={urllib.parse.quote(self.query)}&limit={urllib.parse.quote(limit)}",
             PlatformTracks, list_key="results", item_model=MusicTrack
         )
 

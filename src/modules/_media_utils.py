@@ -97,16 +97,18 @@ def get_reply_markup(track_name: str, artist: str) -> types.ReplyMarkupInlineKey
         [
             [
                 types.InlineKeyboardButton(
-                    text="Update ",
-                    type=types.InlineKeyboardButtonTypeUrl("https://t.me/FallenProjects"),
-                ),
-                types.InlineKeyboardButton(
                     text=track_name,
                     type=types.InlineKeyboardButtonTypeSwitchInline(
                         query=artist,
                         target_chat=types.TargetChatCurrent()
                     )
-                ),
+                )
             ],
+            [
+                types.InlineKeyboardButton(
+                    text="Update ",
+                    type=types.InlineKeyboardButtonTypeUrl("https://t.me/FallenProjects"),
+                )
+            ]
         ]
     )

@@ -81,15 +81,13 @@ async def dl_playlist(c: Client, message: types.Message):
 
     first_song = result.results[0]
     if first_song.platform == "youtube":
-        await message.reply_text("you cant dl yt playlist")
+        await message.reply_text("You can't download YouTube playlists.")
         return
 
     if len(result.results) > 30:
-        await message.reply_text("⚠️ The playlist contains more than 30 tracks. Please download each track individually.")
-        return
+        result.results = result.results[:30]
 
     reply = await message.reply_text(f"⏳ Downloading {len(result.results)} tracks and creating ZIP…")
-
     zip_path = await download_playlist_zip(result)
     if not zip_path:
         await message.reply_text("❌ Failed to download any tracks. Please try again.")

@@ -84,8 +84,8 @@ async def dl_playlist(c: Client, message: types.Message):
         await message.reply_text("you cant dl yt playlist")
         return
 
-    if len(result.results) > 15:
-        await message.reply_text("⚠️ The playlist contains more than 15 tracks. Please download each track individually.")
+    if len(result.results) > 30:
+        await message.reply_text("⚠️ The playlist contains more than 30 tracks. Please download each track individually.")
         return
 
     reply = await message.reply_text(f"⏳ Downloading {len(result.results)} tracks and creating ZIP…")

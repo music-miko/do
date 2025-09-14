@@ -32,6 +32,7 @@ URL_PATTERNS = {
         r'^(https?://)?([a-z0-9-]+\.)?apple\.com/[a-z]{2}/(album|playlist|song)/[^/]+/(pl\.[a-zA-Z0-9]+|\d+)(\?i=\d+)?(\?.*)?$')
 }
 
+# === Save Snap Regex Patterns ===
 SAVE_SNAP_PATTERNS = [
     re.compile(
         r"(?i)https?://(?:www\.)?(instagram\.com|instagr\.am)/(reel|reels|stories|p|tv|share)/[^\s/?]+",
@@ -41,7 +42,7 @@ SAVE_SNAP_PATTERNS = [
     re.compile(r"(?i)https?://(?:www\.)?fb\.watch/[^\s/?]+"),
     re.compile(r"(?i)https?://(?:www\.)?facebook\.com/.+/videos/\d+"),
     re.compile(
-        r"https?://(?:www\.|m\.)?(?:vt\.)?tiktok\.com/(?:@[\w.-]+/video/\d+|v/\d+\.html|t/[\w]+|[\w]+)",
+        r"https?://(?:www\.|m\.)?(?:vt\.)?tiktok\.com/(?:@[\w.-]+/(?:video|photo)/\d+|v/\d+\.html|t/[\w]+|[\w]+)",
         re.I,
     ),
     re.compile(r"https?://(?:www\.)?(?:x|twitter)\.com/[^\s]+", re.I),

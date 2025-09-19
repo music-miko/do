@@ -14,12 +14,15 @@ async def convert_to_m4a(input_file: str, cover_file: str, track: TrackInfo) -> 
     abs_input = os.path.abspath(input_file)
     abs_cover = os.path.abspath(cover_file)
     output_file = os.path.splitext(abs_input)[0] + ".m4a"
+
     cmd = [
         "ffmpeg", "-y",
         "-i", abs_input, "-i", abs_cover,
         "-map", "0:a", "-map", "1:v",
         "-c:a", "aac", "-b:a", "192k",
-        "-c:v", "copy", "-disposition:v", "attached_pic",
+        "-c:v", "png",
+        "-metadata:s:v", "title=Album cover",
+        "-metadata:s:v", "comment=Cover (front)",
         "-metadata", f"lyrics={track.lyrics}",
         "-metadata", f"title={track.name}",
         "-metadata", f"artist={track.artist}",
@@ -27,14 +30,13 @@ async def convert_to_m4a(input_file: str, cover_file: str, track: TrackInfo) -> 
         "-metadata", f"year={track.year}",
         "-metadata", "genre=Spotify",
         "-metadata", "comment=Via NoiNoi_bot | FallenProjects",
-        "-f", "ipod",
+        "-f", "mp4",
         output_file,
     ]
 
     proc = await asyncio.create_subprocess_exec(
         *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
     )
-
     stdout, stderr = await proc.communicate()
 
     if proc.returncode != 0:

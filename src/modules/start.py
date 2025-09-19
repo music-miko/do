@@ -96,7 +96,6 @@ async def welcome(c: Client, message: types.Message):
     bot_username = c.me.usernames.editable_username
     bot_name = c.me.first_name
 
-
     reply = await message.reply_text(
         StartMessage.format(bot_name=bot_name, bot_username=bot_username),
         parse_mode="html",

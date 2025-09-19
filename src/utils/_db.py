@@ -9,34 +9,37 @@ from src.config import MONGO_URI, LOGGER_ID
 from ._dataclass import TrackInfo
 
 
-async def convert_to_m4a(input_file: str, cover_file: str, track: TrackInfo) -> Optional[str]:
-    """Convert to M4A and embed cover + metadata."""
+async def convert_to_m4a(input_file: str, cover_file: str, track: TrackInfo) -> str | None:
+    """Convert audio to M4A with cover art and metadata."""
     abs_input = os.path.abspath(input_file)
     abs_cover = os.path.abspath(cover_file)
     output_file = os.path.splitext(abs_input)[0] + ".m4a"
-
     cmd = [
-        "ffmpeg", "-y", "-i", abs_input, "-i", abs_cover,
+        "ffmpeg", "-y",
+        "-i", abs_input, "-i", abs_cover,
         "-map", "0:a", "-map", "1:v",
-        "-c:a", "aac", "-b:a", "192k", "-c:v", "copy", "-disposition:v", "attached_pic",
-        '-metadata', f'lyrics={track.lyrics}',
+        "-c:a", "aac", "-b:a", "192k",
+        "-c:v", "copy", "-disposition:v", "attached_pic",
+        "-metadata", f"lyrics={track.lyrics}",
         "-metadata", f"title={track.name}",
         "-metadata", f"artist={track.artist}",
         "-metadata", f"album={track.album}",
         "-metadata", f"year={track.year}",
         "-metadata", "genre=Spotify",
         "-metadata", "comment=Via NoiNoi_bot | FallenProjects",
-        output_file
+        "-f", "ipod",
+        output_file,
     ]
 
     proc = await asyncio.create_subprocess_exec(
         *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
     )
 
-    _, stderr = await proc.communicate()
+    stdout, stderr = await proc.communicate()
 
     if proc.returncode != 0:
-        print(f"❌ ffmpeg failed: {stderr.decode(errors='ignore')}")
+        print(f"❌ ffmpeg failed:\n{stderr.decode(errors='ignore')}")
+        print(f"🔍 stdout:\n{stdout.decode(errors='ignore')}")
         return None
 
     return output_file

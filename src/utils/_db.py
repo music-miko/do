@@ -5,6 +5,7 @@ from typing import Optional
 from pymongo import AsyncMongoClient
 from pytdbot import types
 
+
 from src.config import MONGO_URI, LOGGER_ID
 from ._dataclass import TrackInfo
 
@@ -137,7 +138,7 @@ class MongoDB:
         upload = await _send(file_path)
 
         # Handle "uploaded as voice" issue
-        if isinstance(upload.content, types.MessageVoiceNote):
+        if not isinstance(upload, types.Error) and isinstance(upload.content, types.MessageVoiceNote):
             fixed_path = await convert_to_m4a(file_path, cover, track)
             if not fixed_path:
                 public_link = await client.getMessageLink(upload.chat_id, upload.id)

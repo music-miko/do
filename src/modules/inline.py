@@ -98,7 +98,7 @@ async def inline_result(c: Client, message: types.UpdateNewChosenInlineResult):
     audio, cover, status_text = await process_track_media(
         c, track, inline_message_id=inline_message_id
     )
-    
+
     if not audio:
         parsed_status = await c.parseTextEntities(status_text, types.TextParseModeHTML())
         await c.editInlineMessageText(
@@ -127,7 +127,10 @@ async def inline_result(c: Client, message: types.UpdateNewChosenInlineResult):
 
     if isinstance(reply, types.Error):
         c.logger.error(f"❌ Failed to send audio file: {reply.message}")
-        parsed_status = await c.parseTextEntities("❌ Failed to send the song. Please try again later."+reply.message, types.TextParseModeHTML())
+        parsed_status = await c.parseTextEntities(
+            f"❌ Failed to send the song. Please try again later.{reply.message}",
+            types.TextParseModeHTML(),
+        )
         await c.editInlineMessageText(
             inline_message_id=inline_message_id,
             input_message_content=types.InputMessageText(parsed_status)

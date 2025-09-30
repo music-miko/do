@@ -6,37 +6,9 @@ import re
 import httpx
 from pytdbot import Client, types
 
-from src import LOGGER
-from src.config import COOKIES_URL, DOWNLOAD_PATH
-from src.utils import Filter, HttpClient
-
+from src.config import DOWNLOAD_PATH
+from src.utils import Filter
 from ._fsub import fsub
-
-
-async def get_cookies() -> str | None:
-    if not COOKIES_URL:
-        return None
-
-    if not COOKIES_URL.startswith("https://batbin.me/"):
-        LOGGER.error("Invalid cookies URL")
-        return None
-
-    paste_id = COOKIES_URL.strip("/").split("/")[-1]
-    file_path = f"database/cookies_{paste_id}.txt"
-
-    if os.path.exists(file_path):
-        return file_path
-
-    raw_url = f"https://batbin.me/raw/{paste_id}"
-    http_client = await HttpClient.get_client()
-    resp = await http_client.get(raw_url)
-    if resp.status_code != 200:
-        return None
-
-    os.makedirs("database", exist_ok=True)
-    with open(file_path, "w") as f:
-        f.write(resp.text)
-    return file_path
 
 
 async def get_working_proxy():
@@ -112,7 +84,8 @@ async def youtube_cmd(c: Client, message: types.Message):
     ]
 
     if is_yt_url:
-        if cookie_file := await get_cookies():
+        cookie_file = "database/yt_cookies.txt"
+        if os.path.exists(cookie_file):
             ytdlp_params += ["--cookies", cookie_file]
         else:
             await reply.edit_text("Selecting a working proxy...")

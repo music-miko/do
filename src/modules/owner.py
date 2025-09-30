@@ -178,10 +178,7 @@ async def shellrunner(message: types.Message) -> types.Ok | types.Error | types.
     text = message.text.split(None, 1)
     if len(text) <= 1:
         reply = await message.reply_text("Usage: /sh &lt cmd &gt")
-        if isinstance(reply, types.Error):
-            return reply
-        return types.Ok()
-
+        return reply if isinstance(reply, types.Error) else types.Ok()
     command = text[1]
     """
     # Security check - prevent dangerous commands

@@ -247,22 +247,21 @@ class Download:
 
                 elif not file_name:
                     parsed_url = urlparse(url)
-                    url_name = Path(parsed_url.path).name
-                    if url_name:
+                    if url_name := Path(parsed_url.path).name:
                         file_name = url_name
 
                 if not file_name or "." not in file_name:
                     ext = ""
-                    content_type = response.headers.get("content-type")
-                    if content_type:
-                        guessed_ext = mimetypes.guess_extension(content_type.split(";")[0].strip())
-                        if guessed_ext:
+                    if content_type := response.headers.get("content-type"):
+                        if guessed_ext := mimetypes.guess_extension(
+                            content_type.split(";")[0].strip()
+                        ):
                             ext = guessed_ext
                     file_name = file_name or f"file-{uuid.uuid4().hex}{ext}"
 
                 file_name = Path(file_name)
                 file_path = self.downloads_dir / file_name
-                temp_path = file_path.with_suffix(file_path.suffix + ".part")
+                temp_path = file_path.with_suffix(f"{file_path.suffix}.part")
 
                 if file_path.exists():
                     return str(file_path)

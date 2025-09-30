@@ -160,10 +160,7 @@ class ApiData:
             response = await client.get(endpoint, headers=headers)
             response.raise_for_status()
             body = response.text.strip()
-            if not body:
-                return types.Error(message="Invalid Math Expression")
-
-            return body
+            return body or types.Error(message="Invalid Math Expression")
         except Exception as e:
             return types.Error(message=f"Evaluation failed: {e}")
 

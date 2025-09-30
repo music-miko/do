@@ -106,9 +106,7 @@ def is_valid_supergroup(chat_id: int) -> bool:
 
 async def _validate_chat(chat_id: int) -> bool:
     """Validate if chat is a supergroup and handle non-supergroups."""
-    if not is_valid_supergroup(chat_id):
-        return False
-    return True
+    return bool(is_valid_supergroup(chat_id))
 
 @Client.on_updateChatMember()
 async def chat_member(client: Client, update: types.UpdateChatMember) -> None:
@@ -150,9 +148,6 @@ async def _handle_status_changes(
         old_status == "chatMemberStatusBanned" and new_status == "chatMemberStatusLeft"
     ):
         await _handle_unban(chat_id, user_id)
-    else:
-        # Promotion or demotion in chat, and we don't care about it
-        pass
 
 async def _handle_join(client: Client, chat_id: int, user_id: int) -> None:
     """Handle user/bot joining the chat."""

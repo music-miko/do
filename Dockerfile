@@ -4,6 +4,7 @@ WORKDIR /app
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
+        git \
         ffmpeg \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*

@@ -14,7 +14,7 @@ async def convert_to_m4a(input_file: str, cover_file: str, track: TrackInfo) -> 
     """Convert audio to M4A with cover art and metadata."""
     abs_input = os.path.abspath(input_file)
     abs_cover = os.path.abspath(cover_file)
-    output_file = os.path.splitext(abs_input)[0] + ".m4a"
+    output_file = f"{os.path.splitext(abs_input)[0]}.m4a"
 
     cmd = [
         "ffmpeg", "-y",

@@ -1,4 +1,5 @@
 import logging
+import shutil
 from datetime import datetime
 
 from pytdbot import Client, types
@@ -48,7 +49,6 @@ class Telegram(Client):
 
     async def start(self) -> None:
         await self._http_client.get_client()
-        # await self._save_cookies()
         await super().start()
         self.logger.info(f"Bot started in {datetime.now() - StartTime} seconds.")
         await db.connect()
@@ -60,6 +60,13 @@ class Telegram(Client):
 
     @staticmethod
     def _check_config() -> None:
+        # Check if FFmpeg is installed
+        if not shutil.which('ffmpeg'):
+            raise RuntimeError(
+                "FFmpeg is not installed or not in system PATH. "
+                "Please install FFmpeg to run this bot."
+            )
+            
         required_keys = [
             "TOKEN",
             "API_ID",
@@ -78,7 +85,8 @@ class Telegram(Client):
             )
 
 
-    async def _save_cookies(self) -> None:
+    @staticmethod
+    async def _save_cookies() -> None:
         from pathlib import Path
         from urllib.parse import urlparse
         from typing import Optional, Tuple

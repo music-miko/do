@@ -30,7 +30,7 @@ start = "src.__main__:main"
 package = true
 
 [tool.uv.sources]
-gamdl = { git = "https://github.com/AshokShau/gamdl" }
+gamdl = { git = "https://github.com/AshokShau/gamdl", rev = "main" }
 
 
 [tool.setuptools]

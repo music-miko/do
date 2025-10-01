@@ -151,7 +151,7 @@ wheels = [
 [[package]]
 name = "gamdl"
 version = "2.6.4"
-source = { git = "https://github.com/AshokShau/gamdl#9b8175f8700d24c7aa43d31eddec1b8ed7553585" }
+source = { git = "https://github.com/AshokShau/gamdl?rev=main#7589d3fe1c8d8b879d0bb54b8690ee33a32a0ee0" }
 dependencies = [
     { name = "click" },
     { name = "colorama" },
@@ -712,7 +712,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gamdl", git = "https://github.com/AshokShau/gamdl" },
+    { name = "gamdl", git = "https://github.com/AshokShau/gamdl?rev=main" },
     { name = "httpx", specifier = "~=0.28.1" },
     { name = "meval", specifier = "~=2.5" },
     { name = "mutagen", specifier = ">=1.47.0" },

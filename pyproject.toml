@@ -4,7 +4,6 @@ version = "0.1.0"
 description = "A high-performance Telegram bot for downloading songs from Spotify, SoundCloud, Apple Music and YouTube in premium quality."
 requires-python = ">=3.13"
 dependencies = [
-     "gamdl",
      "httpx~=0.28.1",
      "meval~=2.5",
      "mutagen>=1.47.0",
@@ -28,10 +27,6 @@ start = "src.__main__:main"
 
 [tool.uv]
 package = true
-
-[tool.uv.sources]
-gamdl = { git = "https://github.com/AshokShau/gamdl", rev = "main" }
-
 
 [tool.setuptools]
 packages = [

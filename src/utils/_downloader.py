@@ -4,7 +4,6 @@ import binascii
 import logging
 import mimetypes
 import re
-import struct
 import time
 import uuid
 import zipfile

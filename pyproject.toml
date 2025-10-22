@@ -11,7 +11,7 @@ dependencies = [
      "pycryptodome~=3.23.0",
      "pydantic~=2.12.3",
      "pymongo~=4.15.3",
-     "pytdbot==0.9.8.dev0",
+     "pytdbot==0.9.7",
      "python-dotenv>=1.1.1",
      "tdjson==1.8.55",
      "ujson~=5.11.0",

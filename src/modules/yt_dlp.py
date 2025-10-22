@@ -77,6 +77,7 @@ async def youtube_cmd(c: Client, message: types.Message):
         "--no-embed-chapters",
         "--no-embed-subs",
         "--merge-output-format", "mp4",
+        "--extractor-args", "youtube:player_js_version=actual",
         "-o", output_template,
         "-f", format_selector,
         "--print", "after_move:filepath",

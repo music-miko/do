@@ -9,13 +9,13 @@ dependencies = [
      "mutagen>=1.47.0",
      "orjson~=3.11.3",
      "pycryptodome~=3.23.0",
-     "pydantic~=2.11.9",
-     "pymongo~=4.15.2",
-     "pytdbot~=0.9.7",
+     "pydantic~=2.12.3",
+     "pymongo~=4.15.3",
+     "pytdbot==0.9.8.dev0",
      "python-dotenv>=1.1.1",
-     "tdjson~=1.8.55",
+     "tdjson==1.8.55",
      "ujson~=5.11.0",
-     "yt-dlp~=2025.9.26",
+     "yt-dlp~=2025.10.14",
 ]
 
 [project.license]

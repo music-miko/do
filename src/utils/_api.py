@@ -51,7 +51,8 @@ SAVE_SNAP_PATTERNS = [
         re.I,
     ),
     re.compile(
-        r"https?://(?:www\.|old\.)?reddit\.com/r/[\w]+/comments/[\w]+(?:/[^\s]*)?|https?://redd\.it/[\w]+",
+        r"https?://(?:(?:www|old)\.)?reddit\.com/r/[\w]+/(?:(?:comments/[\w]+(?:/[^\s]*)?)|(?:s/[\w]+))"
+        r"|https?://redd\.it/[\w]+",
         re.I,
     ),
     re.compile(

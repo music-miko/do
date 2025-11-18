@@ -40,7 +40,7 @@ SAVE_SNAP_PATTERNS = [
     ),
     re.compile(r"(?i)https?://(?:[a-z]+\.)?(pinterest\.com|pin\.it)/[^\s]+"),
     re.compile(r"(?i)https?://(?:www\.)?fb\.watch/[^\s/?]+"),
-    re.compile(r"(?i)https?://(?:www\.)?facebook\.com/.+/videos/\d+"),
+    re.compile(r"(?i)https?://(?:www\.)?facebook\.com/(?:.+/videos/\d+|reel/\d+|share/r/[\w\d]+)/?"),
     re.compile(
         r"https?://(?:www\.|m\.)?(?:vt\.)?tiktok\.com/(?:@[\w.-]+/(?:video|photo)/\d+|v/\d+\.html|t/[\w]+|[\w]+)",
         re.I,

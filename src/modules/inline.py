@@ -1,5 +1,6 @@
 import re
 import uuid
+from html import escape
 from typing import Union
 
 from pytdbot import Client, types
@@ -35,8 +36,8 @@ async def inline_search(c: Client, message: types.UpdateNewInlineQuery):
     results = []
     for track in search.results:
         display_text = (
-            f"<b>🎧 Track:</b> <b>{track.name}</b>\n"
-            f"<b>👤 Artist:</b> <i>{track.artist}</i>\n"
+            f"<b>🎧 Track:</b> <b>{escape(track.name)}</b>\n"
+            f"<b>👤 Artist:</b> <i>{escape(track.artist)}</i>\n"
             f"<b>📅 Year:</b> {track.year}\n"
             f"<b>⏱ Duration:</b> {track.duration // 60}:{track.duration % 60:02d} mins\n"
             f"<b>🔗 Platform:</b> {track.platform.capitalize()}\n"

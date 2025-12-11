@@ -114,7 +114,7 @@ async def privacy_handler(_: Client, message: types.Message):
         "🔒 <b>Privacy Policy</b>\n\n"
         "This bot does <b>not store</b> any personal data or chat history.\n"
         "All queries are processed in real time and nothing is logged.\n\n"
-        "🛠️ <b>Updates:</b>@ArcUpdates"
+        "🛠️ <b>Updates:</b>@ArcUpdates",
         parse_mode="html",
         disable_web_page_preview=True
     )

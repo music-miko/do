@@ -107,7 +107,7 @@ def get_reply_markup(track_name: str, artist: str) -> types.ReplyMarkupInlineKey
             [
                 types.InlineKeyboardButton(
                     text="Update ",
-                    type=types.InlineKeyboardButtonTypeUrl("https://t.me/FallenProjects"),
+                    type=types.InlineKeyboardButtonTypeUrl("https://t.me/ArcBotz"),
                 )
             ]
         ]

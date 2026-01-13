@@ -1,15 +1,23 @@
 import re
-from typing import Tuple, Optional, Union, TYPE_CHECKING
-from pytdbot import types, Client
-from pytdbot.types import Error, InputFileLocal, InputFileRemote
+from typing import Optional, Union, TYPE_CHECKING
 
-from src.utils import ApiData, Download, shortener, db
+from pytdbot import types, Client
+from pytdbot.types import Error, InputFileLocal, InputFileRemote, FormattedText
+
+from src.utils import ApiData, Download, db
 
 if TYPE_CHECKING:
-    from src.utils._dataclass import Track, Spotify, TrackResponse
+    from src.utils._dataclass import TrackResponse
 
 
-async def process_track_media(c: Client, track:  'TrackResponse', chat_id: Optional[int] = None, message_id: Optional[int] = None, inline_message_id: Optional[str] = None) -> Error | tuple[InputFileLocal | InputFileRemote, str | None]:
+async def process_track_media(c: Client, track: 'TrackResponse', chat_id: Optional[int] = None,
+                              message_id: Optional[int] = None, inline_message_id: Optional[str] = None) -> Error | \
+                                                                                                            tuple[
+                                                                                                                InputFileRemote, str | None, FormattedText] | \
+                                                                                                            tuple[
+                                                                                                                InputFileRemote, str | None, None] | \
+                                                                                                            tuple[
+                                                                                                                InputFileRemote | InputFileLocal, str | None]:
     parsed_status = await c.parseTextEntities("<b>Processing your track, please wait...</b>", types.TextParseModeHTML())
     text = types.InputMessageText(parsed_status)
     # Update status message
@@ -18,10 +26,7 @@ async def process_track_media(c: Client, track:  'TrackResponse', chat_id: Optio
     elif chat_id and message_id:
         await c.editMessageText(chat_id=chat_id, message_id=message_id, input_message_content=text)
 
-    audio_file, cover = None, None
-    audio: Optional[Union[types.InputFileLocal, types.InputFileRemote]] = None
     api = ApiData(track.url)
-
     if track.platform.lower() == "spotify":
         _track = await api.spotify()
         if isinstance(_track, types.Error):
@@ -42,9 +47,13 @@ async def process_track_media(c: Client, track:  'TrackResponse', chat_id: Optio
         if isinstance(file_id, types.Error):
             return types.Error(message=file_id.message or "❌ Failed to send song to database.")
 
-        audio = types.InputFileRemote(file_id)
-        return audio, cover
+        if isinstance(file_id, tuple):
+            file_id, caption = file_id
+            audio = types.InputFileRemote(file_id)
+            return audio, cover, caption
 
+        audio = types.InputFileRemote(file_id[0])
+        return audio, cover, None
 
     dl = Download(track)
     result = await dl.process()

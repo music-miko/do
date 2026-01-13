@@ -87,13 +87,20 @@ async def inline_result(c: Client, message: types.UpdateNewChosenInlineResult):
         parsed = urlparse(url)
         parts = parsed.path.strip("/").split("/")
         if len(parts) >= 2 and parts[0] == "track":
-            if file_id := await db.get_song_file_id(parts[1]):
+
+            result = await db.get_song_file_id(parts[1])
+            if result and result[0]:  
+                file_id, caption = result
                 audio = types.InputFileRemote(file_id)
-                reply = await c.editInlineMessageMedia(inline_message_id=inline_message_id, input_message_content=types.InputMessageAudio(audio=audio))
+                reply = await c.editInlineMessageMedia(inline_message_id=inline_message_id,
+                                                       input_message_content=types.InputMessageAudio(audio=audio,
+                                                                                                     caption=caption))
                 if isinstance(reply, types.Error):
                     c.logger.error(f"Failed to send audio file: {reply.message}")
-                    parsed_status = await c.parseTextEntities(f"Failed to send the song. Please try again later.{reply.message}", types.TextParseModeHTML())
-                    await c.editInlineMessageText(inline_message_id=inline_message_id, input_message_content=types.InputMessageText(parsed_status))
+                    parsed_status = await c.parseTextEntities(
+                        f"Failed to send the song. Please try again later.{reply.message}", types.TextParseModeHTML())
+                    await c.editInlineMessageText(inline_message_id=inline_message_id,
+                                                  input_message_content=types.InputMessageText(parsed_status))
                 return
 
     api = ApiData(url)
@@ -102,7 +109,8 @@ async def inline_result(c: Client, message: types.UpdateNewChosenInlineResult):
 
     track = await api.get_track()
     if isinstance(track, types.Error):
-        parsed_status = await c.parseTextEntities(f"Failed to fetch track: {track.message or 'Unknown error'}", types.TextParseModeHTML())
+        parsed_status = await c.parseTextEntities(f"Failed to fetch track: {track.message or 'Unknown error'}",
+                                                  types.TextParseModeHTML())
         await c.editInlineMessageText(
             inline_message_id=inline_message_id,
             input_message_content=types.InputMessageText(parsed_status)
@@ -110,7 +118,7 @@ async def inline_result(c: Client, message: types.UpdateNewChosenInlineResult):
         return
 
     # Process the track media
-    result= await process_track_media(c, track, inline_message_id=inline_message_id)
+    result = await process_track_media(c, track, inline_message_id=inline_message_id)
     if isinstance(result, types.Error):
         parsed_status = await c.parseTextEntities(result.message, types.TextParseModeHTML())
         await c.editInlineMessageText(
@@ -119,7 +127,7 @@ async def inline_result(c: Client, message: types.UpdateNewChosenInlineResult):
         )
         return
 
-    audio, cover = result
+    audio, cover, caption = result
     if not audio:
         parsed_status = await c.parseTextEntities("No Audio", types.TextParseModeHTML())
         await c.editInlineMessageText(
@@ -134,6 +142,7 @@ async def inline_result(c: Client, message: types.UpdateNewChosenInlineResult):
         input_message_content=types.InputMessageAudio(
             audio=audio,
             album_cover_thumbnail=types.InputThumbnail(types.InputFileLocal(cover)) if cover else None,
+            caption=caption
         ),
     )
 
@@ -210,7 +219,8 @@ async def process_snap_inline(c: Client, message: types.UpdateNewInlineQuery, qu
                 id=str(uuid.uuid4()),
                 video_url=video_url,
                 mime_type="video/mp4",
-                thumbnail_url=thumb_url if thumb_url and re.match("^https?://", thumb_url) else "https://i.pinimg.com/736x/e2/c6/eb/e2c6eb0b48fc00f1304431bfbcacf50e.jpg",
+                thumbnail_url=thumb_url if thumb_url and re.match("^https?://",
+                                                                  thumb_url) else "https://i.pinimg.com/736x/e2/c6/eb/e2c6eb0b48fc00f1304431bfbcacf50e.jpg",
                 title=f"Video {idx + 1}",
                 description=f"Video result #{idx + 1}",
                 input_message_content=types.InputMessageVideo(

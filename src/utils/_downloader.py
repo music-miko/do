@@ -6,7 +6,6 @@ import mimetypes
 import re
 import time
 import uuid
-import zipfile
 from pathlib import Path
 from typing import Optional, Tuple, Union
 from urllib.parse import urlparse
@@ -17,8 +16,8 @@ from mutagen.oggvorbis import OggVorbis
 from pytdbot import types
 
 from src import config
-from ._api import ApiData, HttpClient
-from ._dataclass import Spotify, Track, TrackResponse
+from ._api import HttpClient
+from ._dataclass import Spotify, TrackResponse
 
 CHUNK_SIZE = 1024 * 1024  # 1 MB
 DEFAULT_FILE_PERM = 0o644
@@ -51,6 +50,7 @@ class Download:
         """Process the track download with optimized flow."""
         try:
             if not self.track.cdnurl:
+                logger.warning(f"Missing CDN URL for track {self.track}")
                 return types.Error(message="Missing CDN URL")
 
             if self.track.platform.lower() == "spotify":
@@ -58,7 +58,7 @@ class Download:
                 if self.output_file.exists():
                     logger.debug(f"Using cached file: {self.output_file}")
                     return str(self.output_file), str(cover_path) if cover_path.exists() else None
-                return await self.process_standard()
+                return await self.process_spotify()
 
             return await self.process_direct_dl()
         except Exception as e:
@@ -73,7 +73,7 @@ class Download:
         file_path = await self.download_file(self.track.cdnurl, "")
         return file_path, None
 
-    async def process_standard(self) -> Tuple[str, Optional[str]]:
+    async def process_spotify(self) -> Tuple[str, Optional[str]]:
         """Optimized standard processing flow."""
         start_time = time.monotonic()
         if not self.track.key:

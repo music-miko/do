@@ -13,7 +13,6 @@ URL_PATTERNS = {
 
 # === Save Snap Regex Patterns ===
 SAVE_SNAP_PATTERNS = [
-
     # Instagram
     re.compile(
         r"(?i)https?://(?:www\.)?(?:instagram\.com|instagr\.am)/(?:p|reel|reels|tv|stories/(?:highlights/)?[\w._-]+)?/?[\w._-]*"
@@ -107,7 +106,9 @@ SAVE_SNAP_PATTERNS = [
     re.compile(
         r"(?i)https?://(?:www\.|m\.)?(?:"
         r"twitch\.tv/clip/[\w-]+|"
-        r"clips\.twitch\.tv/[\w-]+)"
+        r"clips\.twitch\.tv/[\w-]+|"
+        r"twitch\.tv/[\w-]+/clip/[\w-]+"
+        r")"
     ),
 
     # Tumblr
@@ -187,4 +188,10 @@ SAVE_SNAP_PATTERNS = [
     re.compile(
         r"(?i)https?://(?:www\.)?vimeo\.com/\d+"
     ),
+
+    # Sora AI
+    re.compile(r'^https://sora\.chatgpt\.com/p/s_[0-9a-fA-F]{32}\?psh=[A-Za-z0-9\-_.]+$'),
+
+    # Suno Music AI
+    re.compile(r'^https://suno\.com/song/[0-9a-fA-F\-]{36}/?$')
 ]

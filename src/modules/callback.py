@@ -56,13 +56,17 @@ async def callback_query(c: Client, message: types.UpdateNewCallbackQuery):
         parsed = urlparse(url)
         parts = parsed.path.strip("/").split("/")
         if len(parts) >= 2 and parts[0] == "track":
-            if file_id := await db.get_song_file_id(parts[1]):
+            result = await db.get_song_file_id(parts[1])
+            if result and result[0]:
+                file_id, caption = result
                 audio = types.InputFileRemote(file_id)
-                reply = await c.editMessageMedia(chat_id=message.chat_id, message_id=message.message_id, input_message_content=types.InputMessageAudio(audio=audio))
+                reply = await c.editMessageMedia(chat_id=message.chat_id, message_id=message.message_id,
+                                                 input_message_content=types.InputMessageAudio(audio=audio, caption=caption))
                 if isinstance(reply, types.Error):
-                    c.logger.error(f"Failed to send audio file: {reply.message}")
+                    c.logger.error(f"Failed to send audio file: {reply.message}bb")
                     await message.edit_message_text(f"Failed to send the song. Please try again later.\n{reply.message}")
                 return
+
 
     await message.answer("⏳ Processing your track, please wait...", show_alert=True)
     api = ApiData(url)
@@ -82,7 +86,7 @@ async def callback_query(c: Client, message: types.UpdateNewCallbackQuery):
         await message.edit_message_text(result.message)
         return
 
-    audio, cover = result
+    audio, cover, caption = result
     if not audio:
         await message.edit_message_text("No Audio")
         return
@@ -94,9 +98,10 @@ async def callback_query(c: Client, message: types.UpdateNewCallbackQuery):
         input_message_content=types.InputMessageAudio(
             audio=audio,
             album_cover_thumbnail=types.InputThumbnail(types.InputFileLocal(cover)) if cover else None,
+            caption=caption
         ),
     )
 
     if isinstance(reply, types.Error):
-        c.logger.error(f"Failed to send audio file: {reply.message}")
+        c.logger.error(f"Failed to send audio file: {reply.message}: {audio}")
         await msg.edit_text(f"Failed to send the song. Please try again later.\n{reply.message}")

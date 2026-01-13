@@ -205,11 +205,12 @@ async def process_snap_inline(c: Client, message: types.UpdateNewInlineQuery, qu
             ),
             reply_markup=reply_markup,
         )
-        for idx, image_url in enumerate(api_data.image or [])
+        for idx, image_url in enumerate(api_data.images or [])
         if image_url and re.match("^https?://", image_url)
     )
-    for idx, video_data in enumerate(api_data.video or []):
-        video_url = getattr(video_data, 'video', None)
+
+    for idx, video_data in enumerate(api_data.videos or []):
+        video_url = getattr(video_data, 'url', None)
         thumb_url = getattr(video_data, 'thumbnail', '')
         if not video_url or not re.match("^https?://", video_url):
             continue

@@ -86,7 +86,7 @@ async def process_track_media(c: Client, track: 'TrackResponse', chat_id: Option
     else:
         audio = types.InputFileLocal(audio_file)
 
-    return audio, cover
+    return audio, cover, None
 
 
 def get_reply_markup(track_name: str, artist: str) -> types.ReplyMarkupInlineKeyboard:

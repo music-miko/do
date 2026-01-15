@@ -94,11 +94,6 @@ SAVE_SNAP_PATTERNS = [
         r"(?i)https?://(?:www\.)?linkedin\.com/.*"
     ),
 
-    # SoundCloud
-    re.compile(
-        r"(?i)https?://(?:www\.|m\.)?soundcloud\.com/.*"
-    ),
-
     # Bilibili
     re.compile(
         r"(?i)https?://(?:www\.|m\.)?bilibili\.com/video/.*"

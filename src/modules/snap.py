@@ -106,6 +106,7 @@ async def _send_media_album(
         reply_to=types.InputMessageReplyToMessage(message_id=message.id),
     )
 
+
     if isinstance(result, types.Error):
         client.logger.warning(
             f"❌ Media album upload failed: {result.message} \n"

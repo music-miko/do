@@ -2,13 +2,55 @@ import re
 
 # === URL Regex Patterns ===
 URL_PATTERNS = {
-    "spotify": re.compile(
-        r'^(https?://)?([a-z0-9-]+\.)*spotify\.com/(track|playlist|album|artist)/[a-zA-Z0-9]+(\?.*)?$'),
-    "youtube": re.compile(r'^(https?://)?([a-z0-9-]+\.)*(youtube\.com/watch\?v=|youtu\.be/)[\w-]+(\?.*)?$'),
-    "youtube_music": re.compile(r'^(https?://)?([a-z0-9-]+\.)*youtube\.com/(watch\?v=|playlist\?list=)[\w-]+(\?.*)?$'),
-    "soundcloud": re.compile(r'^(https?://)?([a-z0-9-]+\.)*soundcloud\.com/[\w-]+(/[\w-]+)?(/sets/[\w-]+)?(\?.*)?$'),
+    "youtube": re.compile(
+        r'(?i)https?://(?:www\.|m\.)?'
+        r'(?:youtube\.com/(?:watch\?v=[\w-]+|playlist\?list=[\w-]+|shorts/[\w-]+)'
+        r'|youtu\.be/[\w-]+)'
+    ),
+
+    "youtube_music": re.compile(
+        r'(?i)https?://music\.youtube\.com/.*'
+    ),
+
+    "soundcloud": re.compile(
+        r'(?i)https?://(?:www\.|m\.)?soundcloud\.com/.*'
+    ),
+
     "apple_music": re.compile(
-        r'^(https?://)?([a-z0-9-]+\.)?apple\.com/[a-z]{2}/(album|playlist|song)/[^/]+/(pl\.[a-zA-Z0-9]+|\d+)(\?i=\d+)?(\?.*)?$')
+        r'(?i)^https?://music\.apple\.com/[a-zA-Z-]+/'
+        r'(?:'
+        r'song/(?:[^/]+/)?\d+'
+        r'|album/[^/]+/\d+(?:\?i=\d+)?'
+        r'|playlist/[^/]+/pl\.[\w.-]+'
+        r'|artist/[^/]+/\d+'
+        r')'
+        r'(?:\?.*)?$'
+    ),
+
+    "deezer": re.compile(
+        r'(?i)https?://(?:www\.)?deezer\.com/(?:[a-z]{2}/)?'
+        r'(track|album|playlist)/\d+'
+    ),
+
+    "jiosaavn": re.compile(
+        r'(?i)https?://(?:www\.)?jiosaavn\.com/'
+        r'(song|album|playlist|featured)/[^/]+/[A-Za-z0-9_]+'
+    ),
+
+    "spotify": re.compile(
+        r'(?i)https?://(?:open\.|www\.)?spotify\.com/'
+        r'(album|track|playlist|artist)/[A-Za-z0-9]+'
+    ),
+
+    "gaana": re.compile(
+        r'(?i)https?://(?:www\.)?gaana\.com/'
+        r'(song|album|playlist|artist)/[A-Za-z0-9-]+'
+    ),
+
+    "tidal": re.compile(
+        r'(?i)https?://(?:listen\.)?tidal\.com/'
+        r'(?:browse/)?(track|album|playlist)/[A-Za-z0-9-]+'
+    ),
 }
 
 # === Save Snap Regex Patterns ===

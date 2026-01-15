@@ -41,7 +41,7 @@ async def process_track_media(c: Client, track: 'TrackResponse', chat_id: Option
 
         audio_file, cover = result
         if not audio_file:
-            return types.Error(message="Failed to download song.\nPlease report this to @FallenProjects.")
+            return types.Error(message="Failed to download song.\nPlease report this to @ArcChatz.")
 
         file_id = await db.upload_song_and_get_file_id(audio_file, cover, _track)
         if isinstance(file_id, types.Error):
@@ -63,7 +63,7 @@ async def process_track_media(c: Client, track: 'TrackResponse', chat_id: Option
 
     audio_file, cover = result
     if not audio_file:
-        error_msg = "❌ Failed to download song.\nPlease report this to @FallenProjects."
+        error_msg = "❌ Failed to download song.\nPlease report this to @ArcChatz."
         return types.Error(message=error_msg)
 
     if re.match(r"https?://t\.me/([^/]+)/(\d+)", audio_file):
@@ -105,7 +105,7 @@ def get_reply_markup(track_name: str, artist: str) -> types.ReplyMarkupInlineKey
             [
                 types.InlineKeyboardButton(
                     text="Update ",
-                    type=types.InlineKeyboardButtonTypeUrl("https://t.me/FallenProjects"),
+                    type=types.InlineKeyboardButtonTypeUrl("https://t.me/ArcUpdates"),
                 )
             ]
         ]

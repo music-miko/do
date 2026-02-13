@@ -102,6 +102,11 @@ async def callback_query(c: Client, message: types.UpdateNewCallbackQuery):
         ),
     )
 
+
     if isinstance(reply, types.Error):
+        if reply.message == "MEDIA_NEW_INVALID":
+            await msg.reply_audio(audio=audio, album_cover_thumbnail=types.InputThumbnail(types.InputFileLocal(cover)) if cover else None, caption=caption)
+            await msg.delete()
+            return
         c.logger.error(f"Failed to send audio file: {reply.message}: {audio}")
         await msg.edit_text(f"Failed to send the song. Please try again later.\n{reply.message}")

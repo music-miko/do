@@ -4,7 +4,7 @@ import (
 	"log"
 	"noinoi/internal/database"
 	"regexp"
-	"strings"
+	"strconv"
 	"time"
 
 	"github.com/AshokShau/gotdbot"
@@ -15,8 +15,6 @@ var tokenRegex = regexp.MustCompile(`\d{8,11}:[A-Za-z0-9_-]{35}`)
 func cloneHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 	msg := ctx.EffectiveMessage
 	text := msg.GetText()
-	log.Printf("Cloning %s", text)
-
 	match := tokenRegex.FindString(text)
 	if match == "" {
 		_, _ = msg.ReplyText(c, "No valid bot token found in the forwarded message. Please forward a message that contains your bot token.", nil)
@@ -30,11 +28,12 @@ func cloneHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 		_, _ = msg.ReplyText(c, "Internal error: ClientManager not initialized.", nil)
 		return nil
 	}
+
 	go func() {
 		reply, err := msg.ReplyText(c, "Cloning "+match, nil)
 		clientConfig := gotdbot.DefaultClientConfig()
 		clientConfig.Dispatcher = c.Dispatcher
-		clientConfig.DatabaseDirectory = "db_" + strings.Split(botToken, ":")[0]
+		clientConfig.DatabaseDirectory = "db_" + strconv.FormatInt(database.ParseBotId(botToken), 10)
 
 		newBot, err := manager.RegisterClient(globalConfig.ApiId, globalConfig.ApiHash, botToken, clientConfig)
 		if err != nil {
@@ -48,6 +47,7 @@ func cloneHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 			BotToken:  botToken,
 			CreatedAt: time.Now(),
 		})
+
 		if err != nil {
 			log.Printf("Failed to save bot token to database: %v", err)
 			_, _ = msg.ReplyText(c, "Bot started, but failed to save it to database.", nil)

@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"html"
+	"noinoi/internal/database"
 	"noinoi/internal/httpx"
 	"os"
 	"strings"
@@ -17,6 +18,8 @@ func snapHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 		return nil
 	}
 
+	botId := c.Me.Id
+
 	reply, err := m.ReplyText(c, "⏳ Processing...", nil)
 	if err != nil {
 		return err
@@ -24,6 +27,7 @@ func snapHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 
 	snapData, err := httpx.GetSnap(targetUrl)
 	if err != nil {
+		database.IncrementDownloads(botId, false)
 		_, _ = reply.EditText(c, fmt.Sprintf("Error: %v", err), nil)
 		return nil
 	}
@@ -54,7 +58,10 @@ func snapHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 			}
 
 			if err != nil {
+				database.IncrementDownloads(botId, false)
 				_, _ = reply.EditText(c, fmt.Sprintf("Failed to send photo(s): %v", err), nil)
+			} else {
+				database.IncrementDownloads(botId, true)
 			}
 		}
 	}
@@ -75,9 +82,15 @@ func snapHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 			batch := audioUrls[i:end]
 
 			if len(batch) == 1 {
-				_, _ = handleMediaUpload(c, m, batch[0], "audio", caption)
+				_, err = handleMediaUpload(c, m, batch[0], "audio", caption)
 			} else {
-				_ = sendMediaAlbum(c, m, batch, "audio", caption)
+				err = sendMediaAlbum(c, m, batch, "audio", caption)
+			}
+
+			if err != nil {
+				database.IncrementDownloads(botId, false)
+			} else {
+				database.IncrementDownloads(botId, true)
 			}
 		}
 	}
@@ -104,14 +117,25 @@ func snapHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 			batch := videosWithAudio[i:end]
 
 			if len(batch) == 1 {
-				_, _ = handleMediaUpload(c, m, batch[0], "video", caption)
+				_, err = handleMediaUpload(c, m, batch[0], "video", caption)
 			} else {
-				_ = sendMediaAlbum(c, m, batch, "video", caption)
+				err = sendMediaAlbum(c, m, batch, "video", caption)
+			}
+
+			if err != nil {
+				database.IncrementDownloads(botId, false)
+			} else {
+				database.IncrementDownloads(botId, true)
 			}
 		}
 
 		for _, url := range videosWithoutAudio {
-			_, _ = handleMediaUpload(c, m, url, "animation", caption)
+			_, err = handleMediaUpload(c, m, url, "animation", caption)
+			if err != nil {
+				database.IncrementDownloads(botId, false)
+			} else {
+				database.IncrementDownloads(botId, true)
+			}
 		}
 	}
 

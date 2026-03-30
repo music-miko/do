@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"html"
+	"noinoi/internal/database"
 	"noinoi/internal/httpx"
 	"os"
 	"strings"
@@ -17,6 +18,8 @@ func musicHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 		return nil
 	}
 
+	botId := c.Me.Id
+
 	reply, err := m.ReplyText(c, "⏳ Processing Music...", nil)
 	if err != nil {
 		return err
@@ -24,6 +27,7 @@ func musicHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 
 	musicInfo, err := httpx.GetMusicInfo(targetUrl)
 	if err != nil {
+		database.IncrementDownloads(botId, false)
 		_, _ = reply.EditText(c, fmt.Sprintf("Error: %v", err), nil)
 		return nil
 	}
@@ -33,11 +37,10 @@ func musicHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 		return nil
 	}
 
-	// Only download the first track
 	track := musicInfo.Results[0]
-
 	trackDetails, err := httpx.GetTrack(track.URL)
 	if err != nil {
+		database.IncrementDownloads(botId, false)
 		_, _ = reply.EditText(c, fmt.Sprintf("Error fetching track details: %v", err), nil)
 		return nil
 	}
@@ -90,8 +93,10 @@ func musicHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 	}
 
 	if err != nil {
+		database.IncrementDownloads(botId, false)
 		_, _ = reply.EditText(c, fmt.Sprintf("Failed to send audio: %v", err), nil)
 	} else {
+		database.IncrementDownloads(botId, true)
 		_ = reply.Delete(c, true)
 	}
 

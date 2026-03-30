@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"html"
+	"noinoi/internal/database"
 	"noinoi/internal/httpx"
 	"os"
 	"os/exec"
@@ -104,6 +105,8 @@ func youtubeHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 		return nil
 	}
 
+	botId := c.Me.Id
+
 	reply, err := m.ReplyText(c, "⏳ Processing YouTube...", nil)
 	if err != nil {
 		return err
@@ -114,11 +117,14 @@ func youtubeHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 	if err != nil {
 		if err.Error() == "DURATION_EXCEEDED" {
 			_, _ = reply.EditText(c, "Sorry, videos over 1 hour are not supported.", nil)
-		} else {
-			_, _ = reply.EditText(c, fmt.Sprintf("Error: %v", err), nil)
+			return gotdbot.EndGroups
 		}
+
+		_, _ = reply.EditText(c, fmt.Sprintf("Error: %v", err), nil)
+		database.IncrementDownloads(botId, false)
 		return nil
 	}
+
 	defer os.RemoveAll(tempDir)
 
 	escapedTitle := html.EscapeString(title)
@@ -146,8 +152,12 @@ func youtubeHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 	}
 
 	if err != nil {
+		database.IncrementDownloads(botId, false)
 		_, _ = reply.EditText(c, fmt.Sprintf("Failed to upload: %v", err), nil)
 	} else {
+		if botId != 0 {
+			database.IncrementDownloads(botId, true)
+		}
 		_ = reply.Delete(c, true)
 	}
 
@@ -162,6 +172,8 @@ func ytCommandHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 		return nil
 	}
 
+	botId := c.Me.Id
+
 	reply, err := m.ReplyText(c, "⏳ Processing YouTube Video...", nil)
 	if err != nil {
 		return err
@@ -171,9 +183,11 @@ func ytCommandHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 	if err != nil {
 		if err.Error() == "DURATION_EXCEEDED" {
 			_, _ = reply.EditText(c, "Sorry, videos over 1 hour are not supported.", nil)
-		} else {
-			_, _ = reply.EditText(c, fmt.Sprintf("Error: %v", err), nil)
+			return gotdbot.EndGroups
 		}
+
+		_, _ = reply.EditText(c, fmt.Sprintf("Error: %v", err), nil)
+		database.IncrementDownloads(botId, false)
 		return nil
 	}
 	defer os.RemoveAll(tempDir)
@@ -194,8 +208,10 @@ func ytCommandHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 	})
 
 	if err != nil {
+		database.IncrementDownloads(botId, false)
 		_, _ = reply.EditText(c, fmt.Sprintf("Failed to upload: %v", err), nil)
 	} else {
+		database.IncrementDownloads(botId, true)
 		_ = reply.Delete(c, true)
 	}
 

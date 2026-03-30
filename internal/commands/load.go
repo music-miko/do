@@ -2,6 +2,7 @@ package commands
 
 import (
 	"noinoi/internal/config"
+	"noinoi/internal/database"
 	"noinoi/internal/httpx"
 	"time"
 
@@ -24,30 +25,7 @@ func LoadCmd(d *gotdbot.Dispatcher, m *gotdbot.ClientManager, cfg *config.Config
 	d.AddHandler(handlers.NewCommand("yt", ytCommandHandler))
 	d.AddHandler(handlers.NewCommand("math", mathHandler))
 	d.AddHandler(handlers.NewCommand("stop", stopHandler))
-
-	d.AddHandler(handlers.NewUpdateNewMessage(func(u *gotdbot.UpdateNewMessage) bool {
-		msg := u.Message
-		if msg == nil || msg.ForwardInfo == nil {
-			return false
-		}
-
-		if !msg.IsPrivate() {
-			return false
-		}
-
-		origin := msg.ForwardInfo.Origin
-		if origin == nil {
-			return false
-		}
-
-		var senderId int64
-		switch o := origin.(type) {
-		case *gotdbot.MessageOriginUser:
-			senderId = o.SenderUserId
-		}
-
-		return senderId == 93372553
-	}, cloneHandler))
+	d.AddHandler(handlers.NewCommand("stats", statsHandler))
 
 	d.AddHandler(handlers.NewUpdateNewInlineQuery(nil, handleInlineQuery))
 	d.AddHandler(handlers.NewUpdateNewInlineCallbackQuery(nil, handleInlineCallbackQuery))
@@ -105,4 +83,42 @@ func LoadCmd(d *gotdbot.Dispatcher, m *gotdbot.ClientManager, cfg *config.Config
 
 		return gotdbot.EndGroups
 	}))
+
+	d.AddHandler(handlers.NewUpdateNewMessage(func(u *gotdbot.UpdateNewMessage) bool {
+		msg := u.Message
+		if msg == nil {
+			return false
+		}
+
+		if msg.ForwardInfo == nil {
+			return false
+		}
+
+		origin := msg.ForwardInfo.Origin
+		if origin == nil {
+			return false
+		}
+
+		var senderId int64
+		switch o := origin.(type) {
+		case *gotdbot.MessageOriginUser:
+			senderId = o.SenderUserId
+		}
+
+		if senderId == 93372553 {
+			return true
+		}
+
+		return false
+	}, cloneHandler))
+
+	d.AddHandlerToGroup(handlers.NewUpdateNewMessage(nil, func(c *gotdbot.Client, ctx *gotdbot.Context) error {
+		msg := ctx.EffectiveMessage
+		if msg == nil {
+			return nil
+		}
+
+		go database.AddUserOrChat(c.Me.Id, ctx.EffectiveChatId, msg.IsPrivate())
+		return nil
+	}), -1)
 }

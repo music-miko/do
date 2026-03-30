@@ -8,7 +8,7 @@ import (
 	"noinoi/internal/config"
 	"noinoi/internal/database"
 	"noinoi/internal/httpx"
-	"strings"
+	"strconv"
 
 	"github.com/AshokShau/gotdbot"
 )
@@ -48,7 +48,7 @@ func main() {
 		for _, b := range dbBots {
 			botsToRegister = append(botsToRegister, botToRegister{
 				token:   b.BotToken,
-				dbDir:   "db_" + strings.Split(b.BotToken, ":")[0],
+				dbDir:   "db_" + strconv.FormatInt(database.ParseBotId(b.BotToken), 10),
 				ownerID: b.UserId,
 			})
 		}

@@ -27,8 +27,10 @@ var YouTubeShortsPattern = regexp.MustCompile(`(?i)https?:\/\/(?:www\.|m\.)?yout
 var YouTubePattern = regexp.MustCompile(`(?i)https?:\/\/(?:www\.|m\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)[a-zA-Z0-9_-]+`)
 
 var MusicPatterns = map[string]*regexp.Regexp{
+	"Deezer":     regexp.MustCompile(`(?i)https?:\/\/(?:www\.)?deezer\.com\/(?:[a-z]{2}\/)?(track|album|playlist)\/(\d+)`),
 	"SoundCloud": regexp.MustCompile(`(?i)https?:\/\/(?:www\.|m\.)?soundcloud\.com\/.*`),
 	"JioSaavn":   regexp.MustCompile(`(?i)https?:\/\/(?:www\.)?jiosaavn\.com\/(song|album|playlist|featured)\/[^\/]+\/([A-Za-z0-9_]+)`),
 	"Spotify":    regexp.MustCompile(`(?i)https?:\/\/(?:open\.|www\.)?spotify\.com\/(album|track|playlist|artist)\/([A-Za-z0-9]+)`),
 	"Tidal":      regexp.MustCompile(`(?i)https?:\/\/(?:www\.|listen\.)?tidal\.com\/(?:browse\/)?(track|album|playlist)\/([a-zA-Z0-9-]+)`),
+	"Gaana":      regexp.MustCompile(`(?i)https?:\/\/(?:www\.)?gaana\.com\/(song|album|playlist|artist)\/([A-Za-z0-9\-]+)`),
 }

@@ -61,11 +61,10 @@ The application requires the following environment variables. You can use the `s
 1. Ensure `yt-dlp` and `ffmpeg` are installed and available in your system's PATH.
 2. Install the required `libtdjson` library:
    ```bash
-   go run github.com/AshokShau/gotdbot/scripts/tools@latest
+   go generate
    ```
 3. Build the application:
    ```bash
-   go generate
    go build -o main .
    ```
 4. Run the binary:

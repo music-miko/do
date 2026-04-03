@@ -26,7 +26,7 @@ func main() {
 
 	httpx.Init(cfg.ApiKey, cfg.ApiUrl)
 
-	manager := gotdbot.NewClientManager("./libtdjson.so.1.8.62")
+	manager := gotdbot.NewClientManager("./libtdjson.so.1.8.63")
 	dispatcher := gotdbot.NewDispatcher(nil)
 	commands.LoadCmd(dispatcher, manager, cfg)
 
@@ -48,8 +48,8 @@ func main() {
 		for _, b := range dbBots {
 			botsToRegister = append(botsToRegister, botToRegister{
 				token:   b.BotToken,
-				dbDir:   "db_" + strconv.FormatInt(database.ParseBotId(b.BotToken), 10),
-				ownerID: b.UserId,
+				dbDir:   "db_" + strconv.FormatInt(b.BotId, 10),
+				ownerID: b.OwnerId,
 			})
 		}
 	} else {
@@ -63,7 +63,7 @@ func main() {
 		client, err := manager.RegisterClient(cfg.ApiId, cfg.ApiHash, b.token, con)
 		if err != nil {
 			log.Printf("Failed to register client for token %s: %v", b.token, err)
-			_ = database.DeleteBot(b.ownerID)
+			_ = database.DeleteBot(database.ParseBotId(b.token))
 			continue
 		}
 

@@ -53,7 +53,7 @@ The application requires the following environment variables. You can use the `s
 
 3. Build and start the container:
    ```bash
-   docker-compose up -d --build
+   docker compose up -d --build
    ```
 
 ### Manual Installation

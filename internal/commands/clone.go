@@ -1,73 +1,53 @@
 package commands
 
 import (
-	"log"
+	"fmt"
+	"net/url"
 	"noinoi/internal/database"
-	"regexp"
-	"strconv"
-	"time"
 
 	"github.com/AshokShau/gotdbot"
 )
 
-var tokenRegex = regexp.MustCompile(`\d{8,11}:[A-Za-z0-9_-]{35}`)
+func handleCloneCreate(c *gotdbot.Client, ctx *gotdbot.Context) error {
+	cb := ctx.Update.UpdateNewCallbackQuery
+	userId := cb.SenderUserId
 
-func cloneHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
-	msg := ctx.EffectiveMessage
-	text := msg.GetText()
-	match := tokenRegex.FindString(text)
-	if match == "" {
-		_, _ = msg.ReplyText(c, "No valid bot token found in the forwarded message. Please forward a message that contains your bot token.", nil)
+	bots, err := database.GetBotsByOwner(userId)
+	if err != nil {
+		c.Logger.Warn("Failed to fetch bots for user", "user_id", userId, "error", err)
+		_ = cb.Answer(c, 0, true, "Failed to fetch your bots.", "")
 		return gotdbot.EndGroups
 	}
 
-	userId := ctx.EffectiveChatId
-	botToken := match
-
-	if manager == nil {
-		_, _ = msg.ReplyText(c, "Internal error: ClientManager not initialized.", nil)
-		return nil
+	if len(bots) >= 5 {
+		_ = cb.Answer(c, 0, true, "You have reached the maximum limit of 5 bots. Please delete an existing bot before creating a new one.", "")
+		return gotdbot.EndGroups
 	}
 
-	go func() {
-		reply, err := msg.ReplyText(c, "Cloning "+match, nil)
-		clientConfig := gotdbot.DefaultClientConfig()
-		clientConfig.Dispatcher = c.Dispatcher
-		clientConfig.DatabaseDirectory = "db_" + strconv.FormatInt(database.ParseBotId(botToken), 10)
+	_ = cb.Answer(c, 0, false, "loading..", "")
 
-		newBot, err := manager.RegisterClient(globalConfig.ApiId, globalConfig.ApiHash, botToken, clientConfig)
-		if err != nil {
-			log.Printf("Failed to register new bot: %v", err)
-			_, _ = msg.ReplyText(c, "Failed to register your bot. Is the token valid?", nil)
-			return
-		}
+	botLink := fmt.Sprintf("https://t.me/newbot/%s/%s?name=%s", c.Me.Usernames.EditableUsername, "noinoi_clone", url.QueryEscape("Downloader Bot Clone"))
+	text := fmt.Sprintf("Almost there! Click the button below to confirm and create your bot via Telegram.\n\nOnce you create it, I will automatically start it for you!")
 
-		err = database.SaveBot(database.BotInfo{
-			UserId:    userId,
-			BotToken:  botToken,
-			CreatedAt: time.Now(),
-		})
+	replyMarkup := &gotdbot.ReplyMarkupInlineKeyboard{
+		Rows: [][]gotdbot.InlineKeyboardButton{
+			{
+				{Text: "🚀 Create Bot", Type: &gotdbot.InlineKeyboardButtonTypeUrl{Url: botLink}},
+			},
+		},
+	}
 
-		if err != nil {
-			log.Printf("Failed to save bot token to database: %v", err)
-			_, _ = msg.ReplyText(c, "Bot started, but failed to save it to database.", nil)
-		}
-
-		me, _ := newBot.GetMe()
-		_, err = reply.EditText(c, me.FirstName+" has been successfully started!", nil)
-	}()
+	_, err = cb.EditMessageText(c, text, &gotdbot.EditTextMessageOpts{ReplyMarkup: replyMarkup})
+	if err != nil {
+		return err
+	}
 
 	return gotdbot.EndGroups
 }
 
 func stopHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 	userId := ctx.EffectiveChatId
-	me, _ := c.GetMe()
-	if me == nil {
-		return nil
-	}
-
-	ownerId, ok := database.GetOwner(me.Id)
+	ownerId, ok := database.GetOwner(c.Me.Id)
 	if !ok || ownerId != userId {
 		return nil
 	}
@@ -77,9 +57,9 @@ func stopHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 		return err
 	}
 
-	err = database.DeleteBot(userId)
+	err = database.DeleteBot(c.Me.Id)
 	if err != nil {
-		log.Printf("Failed to delete bot from database: %v", err)
+		c.Logger.Warn("Failed to delete bot", "bot_id", c.Me.Id, "error", err)
 	}
 
 	go c.Close()

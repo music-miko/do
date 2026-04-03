@@ -14,7 +14,8 @@ import (
 )
 
 type BotInfo struct {
-	UserId    int64     `bson:"_id"`
+	BotId     int64     `bson:"_id"` // bot_id
+	OwnerId   int64     `bson:"owner_id"`
 	BotToken  string    `bson:"bot_token"`
 	CreatedAt time.Time `bson:"created_at"`
 }
@@ -32,7 +33,6 @@ var (
 	collection      *mongo.Collection
 	statsCollection *mongo.Collection
 	botToOwner      = make(map[int64]int64)
-	ownerToBot      = make(map[int64]int64)
 	ownersMu        sync.RWMutex
 
 	trackedUsers = make(map[int64]map[int64]bool)
@@ -103,32 +103,44 @@ func SaveBot(bot BotInfo) error {
 	defer cancel()
 
 	opts := options.Replace().SetUpsert(true)
-	filter := bson.M{"_id": bot.UserId}
+	filter := bson.M{"_id": bot.BotId}
 	_, err := collection.ReplaceOne(ctx, filter, bot, opts)
 	if err == nil {
-		botId := ParseBotId(bot.BotToken)
-		if botId != 0 {
-			SetOwner(botId, bot.UserId)
-		}
+		SetOwner(bot.BotId, bot.OwnerId)
 	}
 	return err
 }
 
-func DeleteBot(userId int64) error {
+func DeleteBot(botId int64) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	filter := bson.M{"_id": userId}
+	filter := bson.M{"_id": botId}
 	_, err := collection.DeleteOne(ctx, filter)
 	if err == nil {
 		ownersMu.Lock()
-		if botId, ok := ownerToBot[userId]; ok {
-			delete(botToOwner, botId)
-			delete(ownerToBot, userId)
-		}
+		delete(botToOwner, botId)
 		ownersMu.Unlock()
 	}
 	return err
+}
+
+func GetBotsByOwner(ownerId int64) ([]BotInfo, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	cursor, err := collection.Find(ctx, bson.M{"owner_id": ownerId})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var bots []BotInfo
+	if err = cursor.All(ctx, &bots); err != nil {
+		return nil, err
+	}
+
+	return bots, nil
 }
 
 func GetAllBots() ([]BotInfo, error) {
@@ -147,10 +159,7 @@ func GetAllBots() ([]BotInfo, error) {
 	}
 
 	for _, b := range bots {
-		botId := ParseBotId(b.BotToken)
-		if botId != 0 {
-			SetOwner(botId, b.UserId)
-		}
+		SetOwner(b.BotId, b.OwnerId)
 	}
 
 	return bots, nil
@@ -160,7 +169,6 @@ func SetOwner(botId, ownerId int64) {
 	ownersMu.Lock()
 	defer ownersMu.Unlock()
 	botToOwner[botId] = ownerId
-	ownerToBot[ownerId] = botId
 }
 
 func GetOwner(botId int64) (int64, bool) {

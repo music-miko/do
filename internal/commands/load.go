@@ -1,9 +1,12 @@
 package commands
 
 import (
+	"fmt"
 	"noinoi/internal/config"
 	"noinoi/internal/database"
 	"noinoi/internal/httpx"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/AshokShau/gotdbot"
@@ -84,33 +87,75 @@ func LoadCmd(d *gotdbot.Dispatcher, m *gotdbot.ClientManager, cfg *config.Config
 		return gotdbot.EndGroups
 	}))
 
-	d.AddHandler(handlers.NewUpdateNewMessage(func(u *gotdbot.UpdateNewMessage) bool {
-		msg := u.Message
-		if msg == nil {
-			return false
+	d.AddHandler(handlers.NewUpdateNewCallbackQuery(func(u *gotdbot.UpdateNewCallbackQuery) bool {
+		return u.DataString() == "clone_create"
+	}, handleCloneCreate))
+
+	d.AddHandler(handlers.NewUpdateNewCallbackQuery(func(u *gotdbot.UpdateNewCallbackQuery) bool {
+		return u.DataString() == "clone_mybots"
+	}, handleMyBots))
+
+	d.AddHandler(handlers.NewUpdateNewCallbackQuery(func(u *gotdbot.UpdateNewCallbackQuery) bool {
+		return strings.HasPrefix(u.DataString(), "bot_")
+	}, handleBotManage))
+
+	d.AddHandler(handlers.NewUpdateNewCallbackQuery(func(u *gotdbot.UpdateNewCallbackQuery) bool {
+		return strings.HasPrefix(u.DataString(), "revoke_")
+	}, handleBotRevoke))
+
+	d.AddHandler(handlers.NewUpdateNewCallbackQuery(func(u *gotdbot.UpdateNewCallbackQuery) bool {
+		return strings.HasPrefix(u.DataString(), "delete_")
+	}, handleBotDelete))
+
+	d.AddHandler(handlers.NewUpdateNewCallbackQuery(func(u *gotdbot.UpdateNewCallbackQuery) bool {
+		return string(u.Payload.(*gotdbot.CallbackQueryPayloadData).Data) == "clone_back"
+	}, handleCloneBack))
+
+	d.AddHandler(handlers.NewUpdateManagedBot(nil, func(c *gotdbot.Client, ctx *gotdbot.Context) error {
+		u := ctx.Update.UpdateManagedBot
+		if u == nil {
+			return nil
 		}
 
-		if msg.ForwardInfo == nil {
-			return false
+		log := c.Logger.With("bot_id", u.BotUserId, "owner_id", u.UserId)
+		log.Info("Managed bot updated")
+
+		botToken, err := c.GetBotToken(u.BotUserId, &gotdbot.GetBotTokenOpts{})
+		if err != nil {
+			log.Error("Failed to get token for managed bot", "error", err)
+			return nil
 		}
 
-		origin := msg.ForwardInfo.Origin
-		if origin == nil {
-			return false
+		if err = database.SaveBot(database.BotInfo{
+			BotId:     u.BotUserId,
+			OwnerId:   u.UserId,
+			BotToken:  botToken.Text,
+			CreatedAt: time.Now(),
+		}); err != nil {
+			log.Error("Failed to save managed bot to DB", "error", err)
+			return nil
 		}
 
-		var senderId int64
-		switch o := origin.(type) {
-		case *gotdbot.MessageOriginUser:
-			senderId = o.SenderUserId
+		if isClientRunning(manager, u.BotUserId) {
+			log.Info("Managed bot is already running, skipping start")
+			return nil
 		}
 
-		if senderId == 93372553 {
-			return true
+		clientConfig := gotdbot.DefaultClientConfig()
+		clientConfig.Dispatcher = c.Dispatcher
+		clientConfig.DatabaseDirectory = "db_" + strconv.FormatInt(u.BotUserId, 10)
+
+		newBot, err := manager.RegisterClient(cfg.ApiId, cfg.ApiHash, botToken.Text, clientConfig)
+		if err != nil {
+			log.Error("Failed to start managed clone bot", "error", err)
+			_, _ = c.SendTextMessage(u.UserId, "Your bot was created, but I failed to start the clone.", nil)
+			return nil
 		}
 
-		return false
-	}, cloneHandler))
+		username := newBot.Me.Usernames.EditableUsername
+		_, _ = c.SendTextMessage(u.UserId, fmt.Sprintf("Your clone bot %s is up now", username), nil)
+		return nil
+	}))
 
 	d.AddHandlerToGroup(handlers.NewUpdateNewMessage(nil, func(c *gotdbot.Client, ctx *gotdbot.Context) error {
 		msg := ctx.EffectiveMessage
@@ -121,4 +166,14 @@ func LoadCmd(d *gotdbot.Dispatcher, m *gotdbot.ClientManager, cfg *config.Config
 		go database.AddUserOrChat(c.Me.Id, ctx.EffectiveChatId, msg.IsPrivate())
 		return nil
 	}), -1)
+}
+
+// isClientRunning checks whether a bot with the given ID is already registered and running.
+func isClientRunning(manager *gotdbot.ClientManager, botID int64) bool {
+	for _, client := range manager.GetClients() {
+		if client.Me != nil && client.Me.Id == botID {
+			return true
+		}
+	}
+	return false
 }

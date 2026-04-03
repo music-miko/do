@@ -153,7 +153,7 @@ func LoadCmd(d *gotdbot.Dispatcher, m *gotdbot.ClientManager, cfg *config.Config
 		}
 
 		username := newBot.Me.Usernames.EditableUsername
-		_, _ = c.SendTextMessage(u.UserId, fmt.Sprintf("Your clone bot %s is up now", username), nil)
+		_, _ = c.SendTextMessage(u.UserId, fmt.Sprintf("Your clone bot %s (@%s) is now up and running! 🎉", newBot.Me.FirstName, username), nil)
 		return nil
 	}))
 

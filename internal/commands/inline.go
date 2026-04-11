@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"log/slog"
 	"noinoi/internal/httpx"
 	"strconv"
 	"strings"
@@ -53,8 +54,31 @@ func setCachedURL(url string) string {
 func handleInlineQuery(c *td.Client, ctx *td.Context) error {
 	iq := ctx.Update.UpdateNewInlineQuery
 	query := strings.TrimSpace(iq.Query)
-	if query == "" {
-		return nil
+
+	isUrl := strings.HasPrefix(query, "http://") || strings.HasPrefix(query, "https://")
+
+	if query == "" || !isUrl {
+		instants, err := httpx.GetInstants(query)
+		if err != nil || len(instants) == 0 {
+			slog.Warn("Failed to fetch instants", "error", err, "query", query)
+			return nil
+		}
+
+		var results []td.InputInlineQueryResult
+		for i, inst := range instants {
+			results = append(results, &td.InputInlineQueryResultAudio{
+				Id:       fmt.Sprintf("instant_%d", i),
+				Title:    inst.Name,
+				AudioUrl: inst.URL,
+				InputMessageContent: &td.InputMessageAudio{
+					Audio: &td.InputFileRemote{Id: inst.URL},
+					Caption: &td.FormattedText{
+						Text: "Join @FallenProjects",
+					},
+				},
+			})
+		}
+		return c.AnswerInlineQuery(0, iq.Id, "", results, nil)
 	}
 
 	var targetUrl string

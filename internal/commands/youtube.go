@@ -42,7 +42,7 @@ func downloadYouTube(url string, audioOnly bool) (string, string, string, string
 
 	args := []string{
 		"--no-playlist",
-		"--match-filter", "duration <= 3600",
+		"--match-filter", "duration <= 7200",
 		"--print", "%(title)s",
 		"--print", "after_move:%(filepath)s",
 		"--write-thumbnail",
@@ -121,7 +121,6 @@ func youtubeHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 		}
 
 		_, _ = reply.EditText(c, fmt.Sprintf("Error: %v", err), nil)
-		database.IncrementDownloads(botId, false)
 		return nil
 	}
 
@@ -152,7 +151,6 @@ func youtubeHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 	}
 
 	if err != nil {
-		database.IncrementDownloads(botId, false)
 		_, _ = reply.EditText(c, fmt.Sprintf("Failed to upload: %v", err), nil)
 	} else {
 		if botId != 0 {
@@ -187,7 +185,6 @@ func ytCommandHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 		}
 
 		_, _ = reply.EditText(c, fmt.Sprintf("Error: %v", err), nil)
-		database.IncrementDownloads(botId, false)
 		return nil
 	}
 	defer os.RemoveAll(tempDir)
@@ -208,7 +205,6 @@ func ytCommandHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 	})
 
 	if err != nil {
-		database.IncrementDownloads(botId, false)
 		_, _ = reply.EditText(c, fmt.Sprintf("Failed to upload: %v", err), nil)
 	} else {
 		database.IncrementDownloads(botId, true)

@@ -2,4 +2,5 @@
 .env
 db_*
 libtdjson.so.*
+bot
 *.log

@@ -29,6 +29,9 @@ func LoadCmd(d *gotdbot.Dispatcher, m *gotdbot.ClientManager, cfg *config.Config
 	d.AddHandler(handlers.NewCommand("math", mathHandler))
 	d.AddHandler(handlers.NewCommand("stop", stopHandler))
 	d.AddHandler(handlers.NewCommand("stats", statsHandler))
+	d.AddHandler(handlers.NewCommand("catbox", catboxHandler))
+	d.AddHandler(handlers.NewCommand("tgm", catboxHandler))
+	d.AddHandler(handlers.NewCommand("litterbox", litterboxHandler))
 
 	d.AddHandler(handlers.NewUpdateNewInlineQuery(nil, handleInlineQuery))
 	d.AddHandler(handlers.NewUpdateNewInlineCallbackQuery(nil, handleInlineCallbackQuery))

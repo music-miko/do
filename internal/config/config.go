@@ -14,9 +14,10 @@ type Config struct {
 	ApiHash string
 	ApiKey  string
 	ApiUrl  string
-	Token    string
-	OwnerId  int64
-	MongoUri string
+	Token          string
+	OwnerId        int64
+	MongoUri       string
+	CatboxUserhash string
 }
 
 var ErrMissingEnv = errors.New("missing required environment variable")
@@ -71,6 +72,8 @@ func Load() (*Config, error) {
 	if cfg.MongoUri == "" {
 		return nil, fmt.Errorf("%w: MONGO_URL", ErrMissingEnv)
 	}
+
+	cfg.CatboxUserhash = os.Getenv("CATBOX_USERHASH")
 
 	return cfg, nil
 }

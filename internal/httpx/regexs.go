@@ -33,4 +33,5 @@ var MusicPatterns = map[string]*regexp.Regexp{
 	"Spotify":    regexp.MustCompile(`(?i)https?:\/\/(?:open\.|www\.)?spotify\.com\/(album|track|playlist|artist)\/([A-Za-z0-9]+)`),
 	"Tidal":      regexp.MustCompile(`(?i)https?:\/\/(?:www\.|listen\.)?tidal\.com\/(?:browse\/)?(track|album|playlist)\/([a-zA-Z0-9-]+)`),
 	"Gaana":      regexp.MustCompile(`(?i)https?:\/\/(?:www\.)?gaana\.com\/(song|album|playlist|artist)\/([A-Za-z0-9\-]+)`),
+	"MxPlayer":   regexp.MustCompile(`(?i)https?:\/\/(?:www\.)?mxplayer\.in\/(?:show|movie)\/.*`),
 }

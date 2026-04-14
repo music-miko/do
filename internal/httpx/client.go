@@ -14,6 +14,9 @@ var (
 	client = &http.Client{
 		Timeout: 30 * time.Second,
 	}
+	catClient = &http.Client{
+		Timeout: 3 * time.Minute,
+	}
 	errResp struct {
 		Message string `json:"message"`
 	}

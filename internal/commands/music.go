@@ -53,8 +53,30 @@ func musicHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 		thumbInput = &gotdbot.InputThumbnail{Thumbnail: &gotdbot.InputFileRemote{Id: track.Thumbnail}}
 	}
 
-	input := &gotdbot.InputFileRemote{Id: trackDetails.CdnURL}
+	if strings.ToLower(trackDetails.Platform) == "mxplayer" {
+		localPath, dlErr := httpx.DownloadFile(trackDetails.CdnURL)
+		if dlErr != nil {
+			_, _ = reply.EditText(c, fmt.Sprintf("Failed to download for local upload: %v", dlErr), nil)
+			return nil
+		}
 
+		localInput := &gotdbot.InputFileLocal{Path: localPath}
+		_, err = m.ReplyVideo(c, localInput, &gotdbot.SendVideoOpts{
+			Caption:   caption,
+			ParseMode: "HTML",
+			Duration:  int32(track.Duration),
+			Thumbnail: thumbInput,
+		})
+		if err != nil {
+			_, _ = reply.EditText(c, fmt.Sprintf("Error downloading video: %v", err), nil)
+			return gotdbot.EndGroups
+		}
+
+		_ = reply.Delete(c, true)
+		return gotdbot.EndGroups
+	}
+
+	input := &gotdbot.InputFileRemote{Id: trackDetails.CdnURL}
 	_, err = m.ReplyAudio(c, input, &gotdbot.SendAudioOpts{
 		Caption:             caption,
 		ParseMode:           "HTML",
@@ -65,27 +87,17 @@ func musicHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 	})
 
 	if err != nil && (strings.Contains(err.Error(), "WEBPAGE_CURL_FAILED") || strings.Contains(err.Error(), "WEBPAGE_MEDIA_EMPTY")) {
-		localPath, dlErr := httpx.DownloadFileToTemp(trackDetails.CdnURL, ".mp3")
+		localPath, dlErr := httpx.DownloadFile(trackDetails.CdnURL)
 		if dlErr == nil {
 			defer os.Remove(localPath)
 			localInput := &gotdbot.InputFileLocal{Path: localPath}
-
-			var localThumbInput *gotdbot.InputThumbnail
-			if track.Thumbnail != "" {
-				thumbPath, thumbDlErr := httpx.DownloadFileToTemp(track.Thumbnail, ".jpg")
-				if thumbDlErr == nil {
-					defer os.Remove(thumbPath)
-					localThumbInput = &gotdbot.InputThumbnail{Thumbnail: &gotdbot.InputFileLocal{Path: thumbPath}}
-				}
-			}
-
 			_, err = m.ReplyAudio(c, localInput, &gotdbot.SendAudioOpts{
 				Caption:             caption,
 				ParseMode:           "HTML",
 				Title:               track.Title,
 				Performer:           track.Channel,
 				Duration:            int32(track.Duration),
-				AlbumCoverThumbnail: localThumbInput,
+				AlbumCoverThumbnail: thumbInput,
 			})
 		} else {
 			err = fmt.Errorf("failed to download for local upload: %v", dlErr)

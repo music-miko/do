@@ -168,14 +168,7 @@ func handleMediaUpload(c *gotdbot.Client, m *gotdbot.Message, mediaUrl, mediaTyp
 		return nil, fmt.Errorf("unsupported media type: %s", mediaType)
 	}
 	if err != nil && (strings.Contains(err.Error(), "WEBPAGE_CURL_FAILED") || strings.Contains(err.Error(), "WEBPAGE_MEDIA_EMPTY")) {
-		ext := ".jpg"
-		if mediaType == "video" || mediaType == "animation" {
-			ext = ".mp4"
-		} else if mediaType == "audio" {
-			ext = ".mp3"
-		}
-
-		localPath, dlErr := httpx.DownloadFileToTemp(mediaUrl, ext)
+		localPath, dlErr := httpx.DownloadFile(mediaUrl)
 		if dlErr == nil {
 			defer os.Remove(localPath)
 			input = &gotdbot.InputFileLocal{Path: localPath}
@@ -242,16 +235,9 @@ func sendMediaAlbum(c *gotdbot.Client, m *gotdbot.Message, mediaUrls []string, m
 
 	_, err := albumFunc(mediaUrls)
 	if err != nil && strings.Contains(err.Error(), "WEBPAGE_CURL_FAILED") || err != nil && strings.Contains(err.Error(), "Group send failed") || err != nil && strings.Contains(err.Error(), "WEBPAGE_MEDIA_EMPTY") {
-		ext := ".jpg"
-		if mediaType == "video" || mediaType == "animation" {
-			ext = ".mp4"
-		} else if mediaType == "audio" {
-			ext = ".mp3"
-		}
-
 		var localPaths []string
 		for _, url := range mediaUrls {
-			path, dlErr := httpx.DownloadFileToTemp(url, ext)
+			path, dlErr := httpx.DownloadFile(url)
 			if dlErr == nil {
 				localPaths = append(localPaths, path)
 			}

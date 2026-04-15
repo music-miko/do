@@ -3,10 +3,10 @@ package httpx
 import (
 	"fmt"
 	"log/slog"
-	"math/rand"
 	"net/url"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 // isM3U8 returns true when the URL looks like an HLS stream.
@@ -21,21 +21,13 @@ func isM3U8(rawURL string) bool {
 	return false
 }
 
-func randString(n int) string {
-	const letters = "abcdefghijklmnopqrstuvwxyz0123456789"
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
-	}
-	return string(b)
-}
-
-// DownloadFile downloads any URL using yt-dlp.
 func DownloadFile(rawURL string) (string, error) {
 	if strings.TrimSpace(rawURL) == "" {
 		return "", fmt.Errorf("httpx: empty URL provided")
 	}
-	template := fmt.Sprintf("%%(id)s_%s.%%(ext)s", randString(5))
+
+	template := fmt.Sprintf("%%(id)s_%d.%%(ext)s", time.Now().Unix())
+
 	args := []string{
 		"--no-warnings",
 		"--no-playlist",

@@ -54,19 +54,19 @@ func musicHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 	}
 
 	if strings.ToLower(trackDetails.Platform) == "mxplayer" {
-		localPath, dlErr := httpx.DownloadFile(trackDetails.CdnURL)
-		if dlErr != nil {
-			_, _ = reply.EditText(c, fmt.Sprintf("Failed to download for local upload: %v", dlErr), nil)
-			return nil
-		}
-
-		localInput := &gotdbot.InputFileLocal{Path: localPath}
-		_, err = m.ReplyVideo(c, localInput, &gotdbot.SendVideoOpts{
-			Caption:   caption,
-			ParseMode: "HTML",
-			Duration:  int32(track.Duration),
-			Thumbnail: thumbInput,
+		_, err = m.ReplyPhoto(c, &gotdbot.InputFileRemote{Id: track.Thumbnail}, &gotdbot.SendPhotoOpts{
+			Caption: caption,
+			ReplyMarkup: gotdbot.ReplyMarkupInlineKeyboard{
+				Rows: [][]gotdbot.InlineKeyboardButton{
+					{
+						{Text: "Download", Type: gotdbot.InlineKeyboardButtonTypeUrl{Url: trackDetails.CdnURL}, Style: gotdbot.ButtonStylePrimary{}},
+					},
+				},
+			},
+			ParseMode:  "HTML",
+			HasSpoiler: true,
 		})
+
 		if err != nil {
 			_, _ = reply.EditText(c, fmt.Sprintf("Error downloading video: %v", err), nil)
 			return gotdbot.EndGroups

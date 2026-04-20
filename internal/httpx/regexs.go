@@ -25,6 +25,7 @@ var SnapPatterns = map[string]*regexp.Regexp{
 
 var YouTubeShortsPattern = regexp.MustCompile(`(?i)https?:\/\/(?:www\.|m\.)?youtube\.com\/shorts\/[a-zA-Z0-9_-]+`)
 var YouTubePattern = regexp.MustCompile(`(?i)https?:\/\/(?:www\.|m\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)[a-zA-Z0-9_-]+`)
+var YouTubePostPattern = regexp.MustCompile(`(?i)https?:\/\/(?:www\.|m\.)?youtube\.com\/(?:post\/|channel\/[\w-]+\/community\?lb=)([a-zA-Z0-9_-]+)`)
 
 var MusicPatterns = map[string]*regexp.Regexp{
 	"Deezer":     regexp.MustCompile(`(?i)https?:\/\/(?:www\.)?deezer\.com\/(?:[a-z]{2}\/)?(track|album|playlist)\/(\d+)`),

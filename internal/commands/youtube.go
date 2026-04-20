@@ -14,21 +14,25 @@ import (
 	"github.com/AshokShau/gotdbot"
 )
 
-func getYouTubeUrl(m *gotdbot.Message) (string, bool) {
+func getYouTubeUrl(m *gotdbot.Message) (string, string) {
 	text := m.GetText()
 	if text == "" {
-		return "", false
+		return "", ""
 	}
 
 	if match := httpx.YouTubeShortsPattern.FindString(text); match != "" {
-		return match, true
+		return match, "short"
+	}
+
+	if match := httpx.YouTubePostPattern.FindString(text); match != "" {
+		return match, "post"
 	}
 
 	if match := httpx.YouTubePattern.FindString(text); match != "" {
-		return match, false
+		return match, "video"
 	}
 
-	return "", false
+	return "", ""
 }
 
 func downloadYouTube(url string, audioOnly bool) (string, string, string, string, error) {
@@ -100,7 +104,7 @@ func youtubeHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 		return nil
 	}
 
-	url, isShort := getYouTubeUrl(m)
+	url, typ := getYouTubeUrl(m)
 	if url == "" {
 		return nil
 	}
@@ -112,7 +116,51 @@ func youtubeHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 		return err
 	}
 
-	audioOnly := !isShort
+	if typ == "post" {
+		data, err := httpx.GetYouTubePost(url)
+		if err != nil {
+			_, _ = reply.EditText(c, fmt.Sprintf("Error: %v", err), nil)
+			return nil
+		}
+
+		if len(data.Images) == 0 {
+			_, _ = reply.EditText(c, "No images found in this YouTube post.", nil)
+			return nil
+		}
+
+		caption := "Join @FallenProjects"
+		if data.Text != "" {
+			text := data.Text
+			if len(text) > 700 {
+				text = text[:700] + "..."
+			}
+			caption = fmt.Sprintf("<b>%s</b>\n\nJoin @FallenProjects", html.EscapeString(text))
+		}
+
+		if len(data.Images) == 1 {
+			_, err = handleMediaUpload(c, m, SnapMediaItem{URL: data.Images[0]}, "photo", caption)
+		} else {
+			images := data.Images
+			if len(images) > 10 {
+				images = images[:10]
+			}
+			var items []SnapMediaItem
+			for _, img := range images {
+				items = append(items, SnapMediaItem{URL: img})
+			}
+			err = sendMediaAlbum(c, m, items, "photo", caption)
+		}
+
+		if err != nil {
+			_, _ = reply.EditText(c, fmt.Sprintf("Failed to upload: %v", err), nil)
+		} else {
+			database.IncrementDownloads(botId, true)
+			_ = reply.Delete(c, true)
+		}
+		return gotdbot.EndGroups
+	}
+
+	audioOnly := typ == "video"
 	filePath, thumbPath, title, tempDir, err := downloadYouTube(url, audioOnly)
 	if err != nil {
 		if err.Error() == "DURATION_EXCEEDED" {
@@ -153,9 +201,7 @@ func youtubeHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 	if err != nil {
 		_, _ = reply.EditText(c, fmt.Sprintf("Failed to upload: %v", err), nil)
 	} else {
-		if botId != 0 {
-			database.IncrementDownloads(botId, true)
-		}
+		database.IncrementDownloads(botId, true)
 		_ = reply.Delete(c, true)
 	}
 

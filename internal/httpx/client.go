@@ -58,7 +58,7 @@ func GetSnap(targetUrl string) (*SnapResponse, error) {
 }
 
 func Search(targetUrl string) (*SearchResponse, error) {
-	reqUrl := fmt.Sprintf("%s/api/search?query=%s", apiUrl, url.QueryEscape(targetUrl))
+	reqUrl := fmt.Sprintf("%s/api/search?query=%s&platform=spotify", apiUrl, url.QueryEscape(targetUrl))
 	req, err := http.NewRequest(http.MethodGet, reqUrl, nil)
 	if err != nil {
 		return nil, err

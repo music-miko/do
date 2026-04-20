@@ -51,7 +51,7 @@ func LoadCmd(d *gotdbot.Dispatcher, m *gotdbot.ClientManager, cfg *config.Config
 			return false
 		}
 
-		if httpx.YouTubeShortsPattern.MatchString(text) || httpx.YouTubePattern.MatchString(text) {
+		if httpx.YouTubeShortsPattern.MatchString(text) || httpx.YouTubePattern.MatchString(text) || httpx.YouTubePostPattern.MatchString(text) {
 			return true
 		}
 
@@ -71,7 +71,7 @@ func LoadCmd(d *gotdbot.Dispatcher, m *gotdbot.ClientManager, cfg *config.Config
 	}, func(c *gotdbot.Client, ctx *gotdbot.Context) error {
 		text := ctx.EffectiveMessage.GetText()
 
-		if httpx.YouTubeShortsPattern.MatchString(text) || httpx.YouTubePattern.MatchString(text) {
+		if httpx.YouTubeShortsPattern.MatchString(text) || httpx.YouTubePattern.MatchString(text) || httpx.YouTubePostPattern.MatchString(text) {
 			return youtubeHandler(c, ctx)
 		}
 

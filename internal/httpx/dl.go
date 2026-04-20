@@ -2,8 +2,11 @@ package httpx
 
 import (
 	"fmt"
+	"io"
 	"log/slog"
+	"net/http"
 	"net/url"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -26,11 +29,14 @@ func DownloadFile(rawURL string) (string, error) {
 		return "", fmt.Errorf("httpx: empty URL provided")
 	}
 
-	template := fmt.Sprintf("%%(id)s_%d.%%(ext)s", time.Now().Unix())
+	template := fmt.Sprintf("dl_%d.%%(ext)s", time.Now().Unix())
 
 	args := []string{
 		"--no-warnings",
 		"--no-playlist",
+		"--restrict-filenames",
+		"--no-mtime",
+		"--force-overwrites",
 		"-o", template,
 		"--print", "after_move:filepath",
 		"--retries", "1",
@@ -79,4 +85,39 @@ func extractFilePath(output string) (string, error) {
 		}
 	}
 	return "", fmt.Errorf("could not extract file path from yt-dlp output")
+}
+
+func DownloadImg(rawURL string) (string, error) {
+	if strings.TrimSpace(rawURL) == "" {
+		return "", fmt.Errorf("httpx: empty URL provided")
+	}
+
+	resp, err := client.Get(rawURL)
+	if err != nil {
+		return "", fmt.Errorf("httpx: failed to GET url: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("httpx: non-200 status code: %d", resp.StatusCode)
+	}
+
+	ext := "jpg"
+	if strings.Contains(strings.ToLower(resp.Header.Get("Content-Type")), "png") {
+		ext = "png"
+	}
+
+	path := fmt.Sprintf("thumb_%d.%s", time.Now().UnixNano(), ext)
+	out, err := os.Create(path)
+	if err != nil {
+		return "", fmt.Errorf("httpx: failed to create local file: %w", err)
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("httpx: failed to write data to file: %w", err)
+	}
+
+	return path, nil
 }

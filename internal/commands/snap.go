@@ -11,6 +11,11 @@ import (
 	"github.com/AshokShau/gotdbot"
 )
 
+type SnapMediaItem struct {
+	URL       string
+	Thumbnail string
+}
+
 func snapHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 	m := ctx.EffectiveMessage
 	targetUrl := getUrl(m)
@@ -50,7 +55,11 @@ func snapHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 				end = len(snapData.Images)
 			}
 
-			batch := snapData.Images[i:end]
+			batchUrls := snapData.Images[i:end]
+			var batch []SnapMediaItem
+			for _, u := range batchUrls {
+				batch = append(batch, SnapMediaItem{URL: u})
+			}
 			if len(batch) == 1 {
 				_, err = handleMediaUpload(c, m, batch[0], "photo", caption)
 			} else {
@@ -79,8 +88,11 @@ func snapHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 			if end > len(audioUrls) {
 				end = len(audioUrls)
 			}
-			batch := audioUrls[i:end]
-
+			batchUrls := audioUrls[i:end]
+			var batch []SnapMediaItem
+			for _, u := range batchUrls {
+				batch = append(batch, SnapMediaItem{URL: u})
+			}
 			if len(batch) == 1 {
 				_, err = handleMediaUpload(c, m, batch[0], "audio", caption)
 			} else {
@@ -96,16 +108,16 @@ func snapHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 	}
 
 	if len(snapData.Videos) > 0 {
-		var videosWithAudio, videosWithoutAudio []string
+		var videosWithAudio, videosWithoutAudio []SnapMediaItem
 		for _, v := range snapData.Videos {
 			if v.URL == "" {
 				continue
 			}
 			hasAudio, _ := httpx.HasAudioStream(v.URL)
 			if hasAudio {
-				videosWithAudio = append(videosWithAudio, v.URL)
+				videosWithAudio = append(videosWithAudio, SnapMediaItem{URL: v.URL, Thumbnail: v.Thumbnail})
 			} else {
-				videosWithoutAudio = append(videosWithoutAudio, v.URL)
+				videosWithoutAudio = append(videosWithoutAudio, SnapMediaItem{URL: v.URL, Thumbnail: v.Thumbnail})
 			}
 		}
 
@@ -129,8 +141,8 @@ func snapHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 			}
 		}
 
-		for _, url := range videosWithoutAudio {
-			_, err = handleMediaUpload(c, m, url, "animation", caption)
+		for _, item := range videosWithoutAudio {
+			_, err = handleMediaUpload(c, m, item, "animation", caption)
 			if err != nil {
 				database.IncrementDownloads(botId, false)
 			} else {
@@ -143,9 +155,9 @@ func snapHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 	return gotdbot.EndGroups
 }
 
-func handleMediaUpload(c *gotdbot.Client, m *gotdbot.Message, mediaUrl, mediaType, caption string) (*gotdbot.Message, error) {
+func handleMediaUpload(c *gotdbot.Client, m *gotdbot.Message, item SnapMediaItem, mediaType, caption string) (*gotdbot.Message, error) {
 	var input gotdbot.InputFile
-	input = &gotdbot.InputFileRemote{Id: mediaUrl}
+	input = &gotdbot.InputFileRemote{Id: item.URL}
 
 	var err error
 	var msg *gotdbot.Message
@@ -168,19 +180,28 @@ func handleMediaUpload(c *gotdbot.Client, m *gotdbot.Message, mediaUrl, mediaTyp
 		return nil, fmt.Errorf("unsupported media type: %s", mediaType)
 	}
 	if err != nil && (strings.Contains(err.Error(), "WEBPAGE_CURL_FAILED") || strings.Contains(err.Error(), "WEBPAGE_MEDIA_EMPTY")) {
-		localPath, dlErr := httpx.DownloadFile(mediaUrl)
+		localPath, dlErr := httpx.DownloadFile(item.URL)
 		if dlErr == nil {
 			defer os.Remove(localPath)
 			input = &gotdbot.InputFileLocal{Path: localPath}
+			var thumb *gotdbot.InputThumbnail
+			if item.Thumbnail != "" {
+				thumbLocalPath, thumbDlErr := httpx.DownloadImg(item.Thumbnail)
+				if thumbDlErr == nil {
+					defer os.Remove(thumbLocalPath)
+					thumb = &gotdbot.InputThumbnail{Thumbnail: &gotdbot.InputFileLocal{Path: thumbLocalPath}}
+				}
+			}
+
 			switch mediaType {
 			case "photo":
 				msg, err = m.ReplyPhoto(c, input, opts)
 			case "video":
-				msg, err = m.ReplyVideo(c, input, &gotdbot.SendVideoOpts{Caption: caption, ParseMode: "HTML"})
+				msg, err = m.ReplyVideo(c, input, &gotdbot.SendVideoOpts{Caption: caption, ParseMode: "HTML", Thumbnail: thumb})
 			case "animation":
-				msg, err = m.ReplyAnimation(c, input, &gotdbot.SendAnimationOpts{Caption: caption, ParseMode: "HTML"})
+				msg, err = m.ReplyAnimation(c, input, &gotdbot.SendAnimationOpts{Caption: caption, ParseMode: "HTML", Thumbnail: thumb})
 			case "audio":
-				msg, err = m.ReplyAudio(c, input, &gotdbot.SendAudioOpts{Caption: caption, ParseMode: "HTML"})
+				msg, err = m.ReplyAudio(c, input, &gotdbot.SendAudioOpts{Caption: caption, ParseMode: "HTML", AlbumCoverThumbnail: thumb})
 			}
 		}
 	}
@@ -188,11 +209,12 @@ func handleMediaUpload(c *gotdbot.Client, m *gotdbot.Message, mediaUrl, mediaTyp
 	return msg, err
 }
 
-func sendMediaAlbum(c *gotdbot.Client, m *gotdbot.Message, mediaUrls []string, mediaType, caption string) error {
-	albumFunc := func(urls []string) (*gotdbot.Messages, error) {
+func sendMediaAlbum(c *gotdbot.Client, m *gotdbot.Message, items []SnapMediaItem, mediaType, caption string) error {
+	albumFunc := func(mediaItems []SnapMediaItem, isLocal bool) (*gotdbot.Messages, []string, error) {
 		var contents []gotdbot.InputMessageContent
 		var captionObj *gotdbot.FormattedText
 		var err error
+		var tempFiles []string
 
 		if caption != "" {
 			captionObj, err = c.ParseTextEntities(&gotdbot.TextParseModeHTML{}, caption)
@@ -201,12 +223,12 @@ func sendMediaAlbum(c *gotdbot.Client, m *gotdbot.Message, mediaUrls []string, m
 			}
 		}
 
-		for i, url := range urls {
+		for i, item := range mediaItems {
 			var input gotdbot.InputFile
-			if strings.HasPrefix(url, "http") {
-				input = &gotdbot.InputFileRemote{Id: url}
+			if isLocal {
+				input = &gotdbot.InputFileLocal{Path: item.URL}
 			} else {
-				input = &gotdbot.InputFileLocal{Path: url}
+				input = &gotdbot.InputFileRemote{Id: item.URL}
 			}
 
 			var currentCaption *gotdbot.FormattedText
@@ -214,15 +236,24 @@ func sendMediaAlbum(c *gotdbot.Client, m *gotdbot.Message, mediaUrls []string, m
 				currentCaption = captionObj
 			}
 
+			var thumb *gotdbot.InputThumbnail
+			if isLocal && item.Thumbnail != "" {
+				thumbLocalPath, thumbDlErr := httpx.DownloadImg(item.Thumbnail)
+				if thumbDlErr == nil {
+					tempFiles = append(tempFiles, thumbLocalPath)
+					thumb = &gotdbot.InputThumbnail{Thumbnail: &gotdbot.InputFileLocal{Path: thumbLocalPath}}
+				}
+			}
+
 			switch mediaType {
 			case "photo":
 				contents = append(contents, &gotdbot.InputMessagePhoto{Photo: input, Caption: currentCaption})
 			case "video":
-				contents = append(contents, &gotdbot.InputMessageVideo{Video: input, Caption: currentCaption})
+				contents = append(contents, &gotdbot.InputMessageVideo{Video: input, Caption: currentCaption, Thumbnail: thumb})
 			case "animation":
-				contents = append(contents, &gotdbot.InputMessageAnimation{Animation: input, Caption: currentCaption})
+				contents = append(contents, &gotdbot.InputMessageAnimation{Animation: input, Caption: currentCaption, Thumbnail: thumb})
 			case "audio":
-				contents = append(contents, &gotdbot.InputMessageAudio{Audio: input, Caption: currentCaption})
+				contents = append(contents, &gotdbot.InputMessageAudio{Audio: input, Caption: currentCaption, AlbumCoverThumbnail: thumb})
 			}
 		}
 
@@ -230,26 +261,30 @@ func sendMediaAlbum(c *gotdbot.Client, m *gotdbot.Message, mediaUrls []string, m
 			ReplyTo: &gotdbot.InputMessageReplyToMessage{MessageId: m.Id},
 		})
 
-		return msg, err
+		return msg, tempFiles, err
 	}
 
-	_, err := albumFunc(mediaUrls)
+	_, _, err := albumFunc(items, false)
 	if err != nil && strings.Contains(err.Error(), "WEBPAGE_CURL_FAILED") || err != nil && strings.Contains(err.Error(), "Group send failed") || err != nil && strings.Contains(err.Error(), "WEBPAGE_MEDIA_EMPTY") {
-		var localPaths []string
-		for _, url := range mediaUrls {
-			path, dlErr := httpx.DownloadFile(url)
+		var localItems []SnapMediaItem
+		var mainPaths []string
+		for _, item := range items {
+			path, dlErr := httpx.DownloadFile(item.URL)
 			if dlErr == nil {
-				localPaths = append(localPaths, path)
+				mainPaths = append(mainPaths, path)
+				localItems = append(localItems, SnapMediaItem{URL: path, Thumbnail: item.Thumbnail})
 			}
 		}
 
-		if len(localPaths) > 0 {
-			defer func() {
-				for _, p := range localPaths {
-					os.Remove(p)
-				}
-			}()
-			_, err = albumFunc(localPaths)
+		if len(localItems) > 0 {
+			_, thumbPaths, newErr := albumFunc(localItems, true)
+			err = newErr
+			for _, p := range mainPaths {
+				os.Remove(p)
+			}
+			for _, p := range thumbPaths {
+				os.Remove(p)
+			}
 		}
 	}
 

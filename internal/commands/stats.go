@@ -77,11 +77,9 @@ func statsHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 			"📦 <b>Go Version:</b> <code>%s</code>\n"+
 			"🧵 <b>Goroutines:</b> <code>%d</code>\n"+
 			"💾 <b>RAM (Alloc):</b> <code>%.2f MB</code>\n"+
-			"💾 <b>RAM (Total):</b> <code>%.2f MB</code>\n"+
 			"💾 <b>RAM (Sys):</b> <code>%.2f MB</code>\n",
 		uptime, runtime.Version(), runtime.NumGoroutine(),
 		float64(mStats.Alloc)/1024/1024,
-		float64(mStats.TotalAlloc)/1024/1024,
 		float64(mStats.Sys)/1024/1024,
 	)
 

@@ -38,9 +38,17 @@ func GetSnap(targetUrl string) (*SnapResponse, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
+		if urlErr, ok := err.(*url.Error); ok && urlErr.Timeout() {
+			return nil, fmt.Errorf("the server is taking too long to respond. Please try again later")
+		}
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			fmt.Println("failed to close response body")
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		if err := json.NewDecoder(resp.Body).Decode(&errResp); err == nil {
@@ -66,9 +74,17 @@ func Search(targetUrl string) (*SearchResponse, error) {
 	req.Header.Set("X-API-Key", apiKey)
 	resp, err := client.Do(req)
 	if err != nil {
+		if urlErr, ok := err.(*url.Error); ok && urlErr.Timeout() {
+			return nil, fmt.Errorf("The server is taking too long to respond. Please try again later.")
+		}
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			fmt.Println("failed to close response body")
+		}
+	}()
 	if resp.StatusCode != http.StatusOK {
 		if err := json.NewDecoder(resp.Body).Decode(&errResp); err == nil {
 			return nil, fmt.Errorf("API error (%d): %s", resp.StatusCode, errResp.Message)
@@ -91,9 +107,17 @@ func GetMusicInfo(targetUrl string) (*SearchResponse, error) {
 	req.Header.Set("X-API-Key", apiKey)
 	resp, err := client.Do(req)
 	if err != nil {
+		if urlErr, ok := err.(*url.Error); ok && urlErr.Timeout() {
+			return nil, fmt.Errorf("The server is taking too long to respond. Please try again later.")
+		}
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			fmt.Println("failed to close response body")
+		}
+	}()
 	if resp.StatusCode != http.StatusOK {
 		if err := json.NewDecoder(resp.Body).Decode(&errResp); err == nil {
 			return nil, fmt.Errorf("API error (%d): %s", resp.StatusCode, errResp.Message)
@@ -116,10 +140,18 @@ func GetTrack(targetUrl string) (*TrackResponse, error) {
 	req.Header.Set("X-API-Key", apiKey)
 	resp, err := client.Do(req)
 	if err != nil {
+		if urlErr, ok := err.(*url.Error); ok && urlErr.Timeout() {
+			return nil, fmt.Errorf("The server is taking too long to respond. Please try again later.")
+		}
 		return nil, err
 	}
 
-	defer resp.Body.Close()
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			fmt.Println("failed to close response body")
+		}
+	}()
 	if resp.StatusCode != http.StatusOK {
 		if err := json.NewDecoder(resp.Body).Decode(&errResp); err == nil {
 			return nil, fmt.Errorf("API error (%d): %s", resp.StatusCode, errResp.Message)

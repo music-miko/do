@@ -24,7 +24,7 @@ func LoadCmd(d *gotdbot.Dispatcher, m *gotdbot.ClientManager, cfg *config.Config
 	globalConfig = cfg
 	d.AddHandler(handlers.NewCommand("ping", pingHandler))
 	d.AddHandler(handlers.NewCommand("start", startHandler))
-	d.AddHandler(handlers.NewCommand("help", helpHandler))
+	d.AddHandler(handlers.NewCommand("help", startHandler))
 	d.AddHandler(handlers.NewCommand("yt", ytCommandHandler))
 	d.AddHandler(handlers.NewCommand("math", mathHandler))
 	d.AddHandler(handlers.NewCommand("stop", stopHandler))

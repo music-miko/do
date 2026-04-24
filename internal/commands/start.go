@@ -1,22 +1,33 @@
 package commands
 
-import "github.com/AshokShau/gotdbot"
+import (
+	"fmt"
+
+	"github.com/AshokShau/gotdbot"
+)
 
 func startHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
-	text := `Welcome to <b>NoiNoi Bot</b>! 🚀
+	username := c.Me.Usernames.EditableUsername
+	text := `Welcome to <b>NoiNoi Bot</b> 🚀
 
-I can help you download media from various platforms. Just send me a link, and I'll do the rest!
+Download songs & videos from Instagram, TikTok, YouTube, Spotify, and more — all in one place.
 
-<b>Cloning Feature:</b>
-You can create your own copy of this bot! Click the "Create Bot" button below.
+<b>How it works:</b>
+• Send any link
+• Get your download instantly
 
-Join @FallenProjects for more cool bots and updates.`
+Fast. Simple. No hassle.
+
+Join @FallenProjects for more bots & updates.`
 
 	replyMarkup := &gotdbot.ReplyMarkupInlineKeyboard{
 		Rows: [][]gotdbot.InlineKeyboardButton{
 			{
-				{Text: "➕ Create Bot", Type: &gotdbot.InlineKeyboardButtonTypeCallback{Data: []byte("clone_create")}},
-				{Text: "🤖 My Bots", Type: &gotdbot.InlineKeyboardButtonTypeCallback{Data: []byte("clone_mybots")}},
+				{
+					Text:  "➕ Add me to your group",
+					Type:  gotdbot.InlineKeyboardButtonTypeUrl{Url: fmt.Sprintf("https://t.me/%s?startgroup=true", username)},
+					Style: gotdbot.ButtonStylePrimary{},
+				},
 			},
 		},
 	}
@@ -28,6 +39,6 @@ Join @FallenProjects for more cool bots and updates.`
 	return err
 }
 
-func helpHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
+func cloneHandler(c *gotdbot.Client, ctx *gotdbot.Context) error {
 	return gotdbot.EndGroups
 }

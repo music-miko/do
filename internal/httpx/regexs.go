@@ -17,6 +17,7 @@ var SnapPatterns = map[string]*regexp.Regexp{
 			`twitch\.tv\/[\w-]+\/clip\/[\w-]+` +
 			`)`,
 	),
+	"KickClip": regexp.MustCompile(`(?i)https?:\/\/(?:www\.)?kick\.com\/[\w._-]+\/clips\/[\w-]+`),
 	"SoraAi":   regexp.MustCompile(`^https:\/\/sora\.chatgpt\.com\/p\/s_[0-9a-fA-F]{32}\?psh=[A-Za-z0-9\-_\.]+$`),
 	"SunoAi":   regexp.MustCompile(`^https:\/\/suno\.com\/song\/[0-9a-fA-F\-]{36}\/?$`),
 	"Reddit":   regexp.MustCompile(`(?i)https?:\/\/(?:www\.|m\.)?reddit\.com\/r\/[\w-]+\/comments\/[\w-]+\/.*`),
@@ -36,4 +37,5 @@ var MusicPatterns = map[string]*regexp.Regexp{
 	"Gaana":       regexp.MustCompile(`(?i)https?:\/\/(?:www\.)?gaana\.com\/(song|album|playlist|artist)\/([A-Za-z0-9\-]+)`),
 	"mxplayer":    regexp.MustCompile(`(?i)https?:\/\/(?:www\.)?mxplayer\.in\/(?:show|movie|shorts)\/.*`),
 	"TwitchVideo": regexp.MustCompile(`(?i)https?:\/\/(?:www\.|m\.)?twitch\.tv\/(?:videos|[\w._-]+\/video)\/\d+`),
+	"KickVideo":   regexp.MustCompile(`(?i)https?:\/\/(?:www\.)?kick\.com\/[\w._-]+\/videos\/[a-fA-F0-9-]+`),
 }

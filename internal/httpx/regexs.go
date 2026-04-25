@@ -30,7 +30,7 @@ var YouTubePostPattern = regexp.MustCompile(`(?i)https?:\/\/(?:www\.|m\.)?youtub
 
 var MusicPatterns = map[string]*regexp.Regexp{
 	"Deezer":      regexp.MustCompile(`(?i)https?:\/\/(?:www\.)?deezer\.com\/(?:[a-z]{2}\/)?(track|album|playlist)\/(\d+)`),
-	"SoundCloud":  regexp.MustCompile(`(?i)https?:\/\/(?:www\.|m\.)?soundcloud\.com\/.*`),
+	"SoundCloud":  regexp.MustCompile(`(?i)https?:\/\/(?:(?:www\.|m\.)?soundcloud\.com|on\.soundcloud\.com|snd\.sc)\/.*`),
 	"JioSaavn":    regexp.MustCompile(`(?i)https?:\/\/(?:www\.)?jiosaavn\.com\/(song|album|playlist|featured)\/[^\/]+\/([A-Za-z0-9_]+)`),
 	"Spotify":     regexp.MustCompile(`(?i)https?:\/\/(?:open\.|www\.)?spotify\.com\/(album|track|playlist|artist)\/([A-Za-z0-9]+)`),
 	"Tidal":       regexp.MustCompile(`(?i)https?:\/\/(?:www\.|listen\.)?tidal\.com\/(?:browse\/)?(track|album|playlist)\/([a-zA-Z0-9-]+)`),
